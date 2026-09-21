@@ -1,6 +1,8 @@
 # Week 12 — รายงานตรวจโครงสร้าง Performance และ Accessibility
 
-วันที่ตรวจ: 21 กันยายน 2569
+วันที่ตรวจ source: 21 กันยายน 2569
+
+อัปเดตผลทดสอบอุปกรณ์: 22 กันยายน 2569 ตามคำยืนยันของผู้พัฒนาในบทสนทนา
 
 ตรวจจาก `week12-architecture-performance-accessibility.zip` และ React DevTools exports ที่ผู้พัฒนาส่งมา รายงานนี้แยกข้อค้นพบจากโค้ด ผลการทดลอง และสิ่งที่ยังต้องยืนยัน ใช้ประกอบ `lab-12-quality-audit.md` เดิม โดยให้สถานะหลักฐานในรายงานนี้แทนช่องว่างหรือข้ออ้างที่ยังไม่ยืนยันในเอกสารเดิม
 
@@ -89,7 +91,7 @@ POI เป็นข้อมูลคงที่จึงยังไม่ต�
 | Touch target | ปุ่ม Action ใช้ padding 15 ไม่มี minHeight/hitSlop | minHeight 48, hitSlop 4 และข้อความยืดได้ | `src/components/EventUI.tsx` |
 | POI label | มี role และ selected state อยู่แล้ว แต่ไม่มี label รวมรายละเอียด | เพิ่ม label ชื่อ ประเภท ที่อยู่ | `src/screens/PoiExplorerScreen.tsx` |
 | ข้อความยาว | metadata ของ POI และชื่อ/ที่อยู่แผนที่จำกัดจำนวนบรรทัด | นำข้อจำกัดบรรทัดของข้อความเหล่านี้ออก | `src/screens/PoiExplorerScreen.tsx`, `src/components/PoiMap.tsx` |
-| Reduce Motion | scroll animated=true และ map duration 550/450 เสมอ | ใช้ preference ปิด scroll animation และ map duration=0 | `src/screens/PoiExplorerScreen.tsx`, `src/components/PoiMap.tsx` |
+| Reduce Motion | scroll animated=true และ map duration 550/450 เสมอ | ใช้ preference ปิด scroll animation; รุ่นที่ตรวจเดิมใช้ map duration=0 ต่อมาแก้เป็น setCamera ในโหมด Reduce Motion ตามผลทดสอบบน iPhone | `src/screens/PoiExplorerScreen.tsx`, `src/components/PoiMap.tsx` |
 | รูปตกแต่ง | โลโก้ไม่ได้ตั้ง accessible=false | เพิ่ม accessible=false | `src/screens/PoiExplorerScreen.tsx` |
 | Form label | มี accessibilityLabel อยู่แล้ว | เพิ่ม nativeID และ accessibilityLabelledBy เชื่อม visible label | `app/events/index.tsx` |
 
@@ -104,33 +106,40 @@ Week 11 หน้ารายละเอียด import expo-notifications โ
 | จุดตรวจ | สิ่งที่มีใน Week 12 | หลักฐานและสถานะ |
 |---|---|---|
 | Heading | Text หลัก/หัวข้อส่วนและชื่อกิจกรรมมี role header | ตรวจพบใน event screens, EventCard และ PoiExplorerScreen |
-| ปุ่มและสถานะ | Action มี label, role button, disabled state | ตรวจพบใน EventUI.tsx; ยังต้องยืนยันการอ่านและกดด้วย VoiceOver |
+| ปุ่มและสถานะ | Action มี label, role button, disabled state | ตรวจพบใน EventUI.tsx; ผู้พัฒนายืนยันการอ่านและกดปุ่มใน flow หลักด้วย VoiceOver แล้ว |
 | Touch target | Action มี minHeight 48 และ hitSlop 4 | ตรวจพบจาก style; ไม่เหมารวมว่าปุ่มทุกจุดในแอปผ่าน |
 | Input label | ชื่อกิจกรรมมี visible label, accessibilityLabel และ labelledBy | ตรวจพบในหน้ารายการ; ต้องตรวจเสียงจริงตามแพลตฟอร์ม |
-| Error / Not found focus | ตั้ง focus ไปยัง statusRef หลังโหลดเสร็จ | ตรวจพบในหน้ารายละเอียด; ยังไม่ยืนยันพฤติกรรมจริง |
+| Error / Not found focus | ตั้ง focus ไปยัง statusRef หลังโหลดเสร็จ | ตรวจพบในหน้ารายละเอียด; ผู้พัฒนายืนยัน Not found อ่านได้และกดกลับได้ แต่ไม่ได้วัดจังหวะ focus อัตโนมัติแยกต่างหาก |
 | POI selection | label รวมชื่อ ประเภท ที่อยู่ และ selected state | ตรวจพบใน PoiExplorerScreen |
-| Reduce motion | hook อ่าน setting/listener; map duration เป็น 0 และ scroll ปิด animation | ตรวจพบใน useReduceMotion, PoiMap และ PoiExplorerScreen; ยังไม่มีผลทดลองจริง |
+| Reduce motion | hook อ่าน setting/listener; scroll ปิด animation และแก้ map เป็น setCamera เมื่อเปิด Reduce Motion | ผู้พัฒนารายงานตำแหน่งคลาดในรุ่นเดิม แล้วทดสอบผ่านหลังปรับโค้ดตามคำแนะนำ; ไม่ใช่ผลทดสอบอุปกรณ์โดยผู้ตรวจ |
 | รูปตกแต่ง | โลโก้ accessible=false | ตรวจพบใน PoiExplorerScreen |
-| ข้อความขยาย | ปุ่มไม่มีความสูงตายตัว และข้อความรองรับการขึ้นบรรทัด | ภาพจากผู้พัฒนาแสดงข้อความขยายและปุ่มเพิ่มความสูง แต่ยังไม่ยืนยัน fontScale=2.0 |
+| ข้อความขยาย | ปุ่มไม่มีความสูงตายตัว และข้อความรองรับการขึ้นบรรทัด | ผู้พัฒนาอ่านค่า PixelRatio.getFontScale() ได้ 3.571 (357.1%) และยืนยันว่าใช้งานได้; ไม่ใช่การวัดที่ 2.0 พอดี |
 | Dynamic status | มี accessibilityLiveRegion และ alert role | เป็นหลักฐานโค้ด ไม่ใช่หลักฐานการประกาศเสียงครบทุกแพลตฟอร์ม |
 
-### ผลที่ผู้พัฒนาทดลองไว้
+### ผลทดสอบอุปกรณ์ที่ผู้พัฒนายืนยัน
 
-- ผู้พัฒนารายงานว่า VoiceOver อ่านเนื้อหาได้ แต่ยังไม่มีบันทึกยืนยันลำดับ focus และการกดทุกปุ่มใน flow
-- ภาพตัวอักษรขนาดใหญ่แสดงการตัดบรรทัดและหน้าเลื่อนได้บางส่วน ยังไม่ยืนยันทุกหน้าหรือค่าขยาย 200% ที่แน่นอน
-- ภาพก่อนหน้ามีปุ่มย้อนกลับชื่อ `index` ควรตรวจชื่อที่อ่านว่ามีความหมายต่อผู้ใช้
-- ภาพ notification ยืนยันว่ามี banner ขณะอยู่ในแอปและหน้าจอ Home แต่ไม่ใช่ผลการตรวจ accessibility ทั้งระบบ
+ทดสอบบน iPhone ผ่าน Expo Go ผลต่อไปนี้เป็นการทดสอบด้วยตนเองและคำยืนยันของผู้พัฒนา ผู้ตรวจไม่ได้ควบคุมอุปกรณ์หรือรันทดสอบแทน ไม่ใช้ผลนี้อ้างครอบคลุม Android
+
+| กรณี | ผลที่รายงาน | สถานะ |
+|---|---|---|
+| VoiceOver flow หลัก | ปัดเลือกและแตะสองครั้งเพื่อเปิดกิจกรรม ตั้งเตือน ยกเลิก และกลับรายการได้ | ผ่านตามคำยืนยันผู้พัฒนา |
+| ตัวอักษรขยาย | Console แสดง fontScale 3.571 หรือ 357.1%; ผู้พัฒนายืนยันรายการ ฟอร์ม รายละเอียด ปุ่มล่าง และข้อความ error อ่านและใช้งานได้ | ผ่านที่ 357.1% ซึ่งสูงกว่าเกณฑ์ 200%; ไม่อ้างว่าเป็นการทดสอบตรง 200% |
+| Invalid / missing event ID | เปิด /events/does-not-exist แสดง “ไม่พบกิจกรรม”; อ่านข้อความและกลับหน้ารายการได้ โดยฟอร์มสร้างกิจกรรมอยู่บนหน้ารายการเดียวกัน | ผ่านตามภาพและคำยืนยันผู้พัฒนา |
+| Reduce Motion | รุ่นเดิมพบแผนที่ไปไม่ตรงหมุดเท่าเมื่อปิดโหมด; แก้ให้ใช้ setCamera แทน animateToRegion(..., 0) ในโหมดลดการเคลื่อนไหว และไม่เปิด callout อัตโนมัติ ผู้พัฒนายืนยันผลหลังแก้แล้ว | ผ่านตามคำยืนยันผู้พัฒนา |
+| TalkBack / Android | ยังไม่ได้ทดสอบ | ไม่อ้างผลผ่าน Android |
+
+การแก้ Reduce Motion เป็นการแก้หลัง source ZIP และ profiler exports ที่ตรวจครั้งแรก จึงไม่รวมอยู่ใน source diff/trace ก่อนหน้าที่แนบมา setCamera ที่แก้จะรักษาระดับซูมปัจจุบันและเปลี่ยนจุดศูนย์กลาง ส่วนกล่องชื่อหมุดยังเปิดด้วยการแตะได้
 
 ### รายการก่อนปิดงาน
 
-- [x] เทียบ source Week 11 เพื่อบันทึก before/after ของการแก้ accessibility อย่างน้อย 5 จุด (ยืนยัน 9 รายการข้างต้น; ยังไม่ใช่การผ่าน device audit ทั้งหมด)
-- [ ] VoiceOver: เข้ารายการ เปิดรายละเอียด ตั้ง/ยกเลิกเตือน กลับรายการ โดย swipe focus และ double-tap ได้ครบ
-- [ ] ยืนยันค่าขยาย 200% และตรวจรายการ ฟอร์ม รายละเอียด ปุ่มล่าง และข้อความ error
-- [ ] ทดสอบ invalid ID ว่าอ่าน Not found และกดกลับได้
-- [ ] ทดสอบ Reduce Motion จริงและบันทึกผล
-- [ ] TalkBack ถ้าจะอ้างว่ารองรับ Android ที่ผ่านการทดลองแล้ว
+- [x] เทียบ source Week 11 เพื่อบันทึก before/after ของการแก้ accessibility อย่างน้อย 5 จุด (ยืนยัน 9 รายการข้างต้น)
+- [x] VoiceOver: เข้ารายการ เปิดรายละเอียด ตั้ง/ยกเลิกเตือน กลับรายการ โดย swipe focus และ double-tap ได้ครบ — ผู้พัฒนายืนยัน
+- [x] ทดสอบข้อความขยายเกินเกณฑ์ 200% ที่ fontScale 3.571 (357.1%) และตรวจรายการ ฟอร์ม รายละเอียด ปุ่มล่าง และข้อความ error — ผู้พัฒนายืนยัน
+- [x] ทดสอบ invalid ID ว่าอ่าน Not found และกดกลับได้ — ผู้พัฒนายืนยัน
+- [x] ทดสอบ Reduce Motion จริงและบันทึกผลหลังแก้การจัดศูนย์กลางแผนที่ — ผู้พัฒนายืนยัน
+- [ ] TalkBack / Android — ยังไม่ได้ทดสอบ ใช้ผล VoiceOver บน iPhone เป็นหลักฐาน screen reader
 
-ไม่ติ๊กผ่านรายการที่ยังไม่มีหลักฐาน และไม่ถือว่าภาพนิ่งยืนยัน contrast ratio หรือการใช้งานด้วย screen reader ทั้ง flow
+ผลผ่านมีขอบเขตเฉพาะ flow และอุปกรณ์ที่ผู้พัฒนาทดลอง ไม่ใช่การรับรอง accessibility ทั้งระบบ ภาพนิ่งไม่ได้ยืนยัน contrast ratio และยังควรปรับชื่อปุ่มย้อนกลับ `index` ให้สื่อความหมายหากยังแสดงชื่อนี้อยู่
 
 ## 4. Verification
 
