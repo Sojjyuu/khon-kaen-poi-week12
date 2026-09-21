@@ -40,15 +40,39 @@ export function PoiMap({ poi }: PoiMapProps) {
   const [isFullMapVisible, setFullMapVisible] = useState(false);
 
   useEffect(() => {
-    mapRef.current?.animateToRegion(regionFor(poi), reduceMotion ? 0 : 550);
+  if (reduceMotion) {
+    markerRef.current?.hideCallout();
+    mapRef.current?.setCamera({
+      center: {
+        latitude: poi.latitude,
+        longitude: poi.longitude,
+      },
+    });
+    return;
+  }
 
-    const timer = setTimeout(() => markerRef.current?.showCallout(), reduceMotion ? 0 : 650);
-    return () => clearTimeout(timer);
-  }, [poi.id, poi.latitude, poi.longitude, reduceMotion]);
+  mapRef.current?.animateToRegion(regionFor(poi), 550);
 
-  const centerFullMap = () => {
-    fullMapRef.current?.animateToRegion(regionFor(poi, 0.009), reduceMotion ? 0 : 450);
-  };
+  const timer = setTimeout(
+    () => markerRef.current?.showCallout(),
+    650
+  );
+  return () => clearTimeout(timer);
+}, [poi.id, poi.latitude, poi.longitude, reduceMotion]);
+
+const centerFullMap = () => {
+  if (reduceMotion) {
+    fullMapRef.current?.setCamera({
+      center: {
+        latitude: poi.latitude,
+        longitude: poi.longitude,
+      },
+    });
+    return;
+  }
+
+  fullMapRef.current?.animateToRegion(regionFor(poi, 0.009), 450);
+};
 
   return (
     <>
