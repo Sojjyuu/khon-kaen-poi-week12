@@ -1,0 +1,17 @@
+export const colors = {
+  background: '#F4F1E8',
+  surface: '#FFFDF8',
+  surfaceWarm: '#FFF3C7',
+  primary: '#F3B928',
+  primaryDark: '#B56C00',
+  gold: '#F3B928',
+  goldDark: '#A76500',
+  coral: '#FF6B4A',
+  navy: '#071A35',
+  navySoft: '#102C54',
+  text: '#0B1A30',
+  textMuted: '#667288',
+  border: '#E5DCC4',
+  success: '#0E8F75',
+  pin: '#F24F43',
+};
