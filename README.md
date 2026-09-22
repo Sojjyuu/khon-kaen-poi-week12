@@ -1,5 +1,46 @@
 # Khon Kaen Dino Explorer
 
+## Week 12: Architecture, Performance และ Accessibility
+
+Week 12 ใช้ฟีเจอร์จาก Week 11 เป็นฐาน แล้วหยุดเพิ่ม scope เพื่อทำ quality audit ตามโจทย์:
+
+- แยก Event/Reminder เป็น `screen → feature hook → repository → storage/device service`
+- Event list ใช้ `FlatList` + stable key + memoized `EventCard` และ React Profiler
+- ปรับ accessibility: heading semantics, live region/error focus, touch target ≥ 48px, POI labels/selected state, font-scale friendly layout และ Reduce Motion
+- เก็บ Search/Filter, My Trip, Camera + Filter + Save Photos, Profile และ Notification flow เดิมไว้
+- ลบกิจกรรมส่วนตัวได้ พร้อมยกเลิก reminder ของกิจกรรมนั้น
+
+เอกสารส่งงาน Week 12 (Architecture diagram, Performance review และ Accessibility audit):
+
+[docs/lab-12-quality-audit.md](docs/lab-12-quality-audit.md)
+
+โครงสร้างหลักของ Week 12:
+
+```text
+app/                         routes / screen composition
+src/features/                feature UI, hooks, types
+src/repositories/            use cases + orchestration
+src/services/                device / performance adapters
+src/storage/                 AsyncStorage boundary
+src/components/              reusable shared UI
+tests/                       regression + architecture checks
+docs/                        audit evidence/report
+```
+
+ก่อนทดสอบบนเครื่อง:
+
+```bash
+npm install
+npm test
+npm run typecheck
+npx expo start -c
+```
+
+> VoiceOver/TalkBack, Font Scale 200% และ Performance trace ก่อน/หลังยังต้องเก็บหลักฐานบนอุปกรณ์จริงตาม checklist ในเอกสาร ไม่ควรใส่ตัวเลขสมมติ
+
+---
+
+
 ## Lab 11: กิจกรรมและการแจ้งเตือน
 
 หน้าแรกมีปุ่ม **กิจกรรมและการแจ้งเตือน** สำหรับดู/สร้างกิจกรรม ตั้งเตือนก่อนเริ่ม 30 นาที ยกเลิกเตือน และทดสอบ notification ใน 15 วินาที แตะ notification เพื่อเปิด `/events/[id]` ผ่าน Expo Router
@@ -95,18 +136,5 @@ git push -u origin main
 - **Location and Map** → หน้าแรกใช้ POI + Map + Marker และแผนที่เต็มหน้าจอ
 - **Week 11 Notifications** → `/events` สำหรับสร้างกิจกรรม ตั้ง/ยกเลิก reminder และเปิด Event detail จาก notification
 
-### เพิ่ม dependency สำหรับ Camera
-หลัง Clone ให้ติดตั้ง dependencies ตามปกติ:
-
-```bash
-npm install
-npx expo install expo-image-picker
-```
-
-จากนั้นรัน:
-
-```bash
-npx expo start
-```
-
-> ก่อนส่งงาน ให้แก้ชื่อและรหัสนักศึกษาใน `app/profile.tsx` เป็นข้อมูลจริง และทดสอบ Camera บนอุปกรณ์จริง/Simulator ที่รองรับ permission
+### Camera dependencies
+หลัง Clone ใช้ `npm install` เพื่อดึง `expo-image-picker`, `expo-media-library` และ `react-native-view-shot` ตาม `package.json` จากนั้นทดสอบ Camera / Filter / Save Photos บนอุปกรณ์จริง
