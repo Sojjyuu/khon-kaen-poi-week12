@@ -12,9 +12,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
-import { Asset, requestPermissionsAsync } from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
 import { colors } from '../src/theme/colors';
+import {
+  requestPhotoSavePermission,
+  savePhotoToLibrary,
+} from '../src/services/mediaLibraryService';
 
 type FilterId = 'original' | 'golden' | 'cool' | 'rose';
 
@@ -102,8 +105,8 @@ export default function CameraScreen() {
       setIsSaving(true);
       setMessage('กำลังบันทึกภาพพร้อมฟิลเตอร์...');
 
-      const permission = await requestPermissionsAsync(true);
-      if (permission.status !== 'granted') {
+      const permissionGranted = await requestPhotoSavePermission();
+      if (!permissionGranted) {
         setMessage('ไม่ได้รับสิทธิ์บันทึกรูป กรุณาอนุญาต Photo Library permission');
         return;
       }
@@ -114,7 +117,7 @@ export default function CameraScreen() {
         result: 'tmpfile',
       });
 
-      await Asset.create(capturedUri);
+      await savePhotoToLibrary(capturedUri);
       setMessage(`บันทึกภาพ (${selectedFilter.label}) ลง Photos เรียบร้อยแล้ว ✓`);
       Alert.alert('บันทึกสำเร็จ', 'รูปพร้อมฟิลเตอร์ถูกบันทึกลง Photos แล้ว');
     } catch (error) {
