@@ -1,19 +1,5 @@
 # Khon Kaen Dino Explorer
 
-## Lab 12: Architecture, Performance และ Accessibility
-
-Week 12 refactor งานเดิมโดยไม่เพิ่ม scope: แยก Screen → Feature Hook → Repository → Storage/Device Service, เปลี่ยน Event list เป็น virtualized `FlatList` พร้อม memoized row/Profiler และแก้ accessibility ด้าน semantics, focus, live region, touch target, font scaling และ Reduce Motion
-
-ดู [Architecture diagram, performance evidence และ accessibility audit report](docs/lab-12-quality-audit.md)
-
-ตรวจงานอัตโนมัติ:
-
-```bash
-npm test
-npm run typecheck
-npx expo-doctor
-```
-
 ## Lab 11: กิจกรรมและการแจ้งเตือน
 
 หน้าแรกมีปุ่ม **กิจกรรมและการแจ้งเตือน** สำหรับดู/สร้างกิจกรรม ตั้งเตือนก่อนเริ่ม 30 นาที ยกเลิกเตือน และทดสอบ notification ใน 15 วินาที แตะ notification เพื่อเปิด `/events/[id]` ผ่าน Expo Router
@@ -65,18 +51,12 @@ npx expo start
 ## โครงสร้างสำคัญ
 
 ```text
-app/                              routes และ screen composition
 src/
-  components/                    shared presentational components
-  features/events/              event components, hooks และ types
-  features/accessibility/       shared accessibility behavior
-  repositories/                 use cases และ data/device orchestration
-  services/                     device API และ performance boundary
-  storage/                      AsyncStorage adapter
-  data/pointsOfInterest.ts       ข้อมูลสถานที่สำคัญ 10 แห่ง
-  screens/PoiExplorerScreen.tsx  หน้าสำรวจ POI
-  theme/colors.ts                ชุดสีของแอป
-tests/                           repository, notification และ architecture checks
+  components/PoiMap.tsx         แผนที่ Marker และป้ายชื่อสถานที่
+  data/pointsOfInterest.ts      ข้อมูลสถานที่สำคัญ 10 แห่ง
+  screens/PoiExplorerScreen.tsx หน้ารายการและรายละเอียดสถานที่
+  theme/colors.ts               ชุดสีของแอป
+  types/poi.ts                  TypeScript type ของ POI
 ```
 
 ## Android Production Build
@@ -105,3 +85,28 @@ git push -u origin main
 ```
 
 ไม่ควรอัปโหลด `node_modules`, `.expo`, `.env` หรือ API key จริงขึ้น GitHub
+
+## Final Assignment Integration (Assignments ก่อน Week 11)
+โปรเจกต์นี้รวม Assignment เดิมให้ทำงานต่อเนื่องในแอปเดียว ไม่ได้นำหลายโปรเจกต์มาวางรวมกันเฉย ๆ
+
+- **Profile** → หน้า `/profile` สำหรับข้อมูลผู้พัฒนา
+- **Pokemon Team Builder concept** → หน้า `/trip` ใช้แนวคิดเลือก/ลบรายการและจัดกลุ่มสถานที่เป็น **My Trip** พร้อมบันทึกด้วย AsyncStorage
+- **Camera** → หน้า `/camera` ใช้ Camera / Image Picker เพื่อถ่ายหรือเลือกรูปการเดินทาง
+- **Location and Map** → หน้าแรกใช้ POI + Map + Marker และแผนที่เต็มหน้าจอ
+- **Week 11 Notifications** → `/events` สำหรับสร้างกิจกรรม ตั้ง/ยกเลิก reminder และเปิด Event detail จาก notification
+
+### เพิ่ม dependency สำหรับ Camera
+หลัง Clone ให้ติดตั้ง dependencies ตามปกติ:
+
+```bash
+npm install
+npx expo install expo-image-picker
+```
+
+จากนั้นรัน:
+
+```bash
+npx expo start
+```
+
+> ก่อนส่งงาน ให้แก้ชื่อและรหัสนักศึกษาใน `app/profile.tsx` เป็นข้อมูลจริง และทดสอบ Camera บนอุปกรณ์จริง/Simulator ที่รองรับ permission

@@ -1,10 +1,6 @@
-type ExpoPlugin = string | [string, Record<string, unknown>];
-type ConfigContext = {
-  config: { plugins?: ExpoPlugin[]; [key: string]: unknown };
-};
-declare const process: { env: Record<string, string | undefined> };
+import type { ConfigContext, ExpoConfig } from 'expo/config';
 
-export default ({ config }: ConfigContext) => {
+export default ({ config }: ConfigContext): ExpoConfig => {
   const androidMapsApiKey = process.env.GOOGLE_MAPS_ANDROID_API_KEY;
   const isProductionBuild = process.env.EAS_BUILD_PROFILE === 'production';
 
@@ -27,6 +23,13 @@ export default ({ config }: ConfigContext) => {
       ...(config.plugins ?? []),
       'expo-router',
       'expo-notifications',
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'อนุญาตให้ Khon Kaen Dino Explorer เข้าถึงรูปภาพเพื่อบันทึกการเดินทาง',
+          cameraPermission: 'อนุญาตให้ Khon Kaen Dino Explorer ใช้กล้องเพื่อถ่ายภาพสถานที่',
+        },
+      ],
       [
         'expo-splash-screen',
         {

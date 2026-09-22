@@ -16,7 +16,6 @@ import MapView, {
 } from 'react-native-maps';
 
 import { colors } from '../theme/colors';
-import { useReduceMotion } from '../features/accessibility/hooks/useReduceMotion';
 import type { PointOfInterest } from '../types/poi';
 
 type PoiMapProps = {
@@ -33,52 +32,26 @@ const regionFor = (poi: PointOfInterest, delta = MAP_DELTA) => ({
 });
 
 export function PoiMap({ poi }: PoiMapProps) {
-  const reduceMotion = useReduceMotion();
   const mapRef = useRef<MapView>(null);
   const markerRef = useRef<MapMarker>(null);
   const fullMapRef = useRef<MapView>(null);
   const [isFullMapVisible, setFullMapVisible] = useState(false);
 
   useEffect(() => {
-  if (reduceMotion) {
-    markerRef.current?.hideCallout();
-    mapRef.current?.setCamera({
-      center: {
-        latitude: poi.latitude,
-        longitude: poi.longitude,
-      },
-    });
-    return;
-  }
+    mapRef.current?.animateToRegion(regionFor(poi), 550);
 
-  mapRef.current?.animateToRegion(regionFor(poi), 550);
+    const timer = setTimeout(() => markerRef.current?.showCallout(), 650);
+    return () => clearTimeout(timer);
+  }, [poi.id, poi.latitude, poi.longitude]);
 
-  const timer = setTimeout(
-    () => markerRef.current?.showCallout(),
-    650
-  );
-  return () => clearTimeout(timer);
-}, [poi.id, poi.latitude, poi.longitude, reduceMotion]);
-
-const centerFullMap = () => {
-  if (reduceMotion) {
-    fullMapRef.current?.setCamera({
-      center: {
-        latitude: poi.latitude,
-        longitude: poi.longitude,
-      },
-    });
-    return;
-  }
-
-  fullMapRef.current?.animateToRegion(regionFor(poi, 0.009), 450);
-};
+  const centerFullMap = () => {
+    fullMapRef.current?.animateToRegion(regionFor(poi, 0.009), 450);
+  };
 
   return (
     <>
       <View style={styles.frame}>
         <MapView
-          accessibilityLabel={`แผนที่แสดงตำแหน่ง ${poi.name}`}
           ref={mapRef}
           initialRegion={regionFor(poi)}
           loadingEnabled
@@ -104,7 +77,7 @@ const centerFullMap = () => {
 
         <View pointerEvents="none" style={styles.mapLabel}>
           <Text style={styles.mapLabelEyebrow}>NOW EXPLORING</Text>
-          <Text style={styles.mapLabelName}>
+          <Text numberOfLines={1} style={styles.mapLabelName}>
             {poi.icon} {poi.name}
           </Text>
         </View>
@@ -112,7 +85,6 @@ const centerFullMap = () => {
         <Pressable
           accessibilityLabel="เปิดแผนที่แบบเต็มหน้าจอ"
           accessibilityRole="button"
-          hitSlop={4}
           onPress={() => setFullMapVisible(true)}
           style={({ pressed }) => [styles.expandButton, pressed && styles.pressed]}
         >
@@ -129,7 +101,6 @@ const centerFullMap = () => {
       >
         <View style={styles.fullscreen}>
           <MapView
-            accessibilityLabel={`แผนที่เต็มหน้าจอแสดงตำแหน่ง ${poi.name}`}
             ref={fullMapRef}
             initialRegion={regionFor(poi, 0.009)}
             loadingEnabled
@@ -152,7 +123,6 @@ const centerFullMap = () => {
               <Pressable
                 accessibilityLabel="ปิดแผนที่เต็มหน้าจอ"
                 accessibilityRole="button"
-                hitSlop={4}
                 onPress={() => setFullMapVisible(false)}
                 style={({ pressed }) => [styles.circleButton, pressed && styles.pressed]}
               >
@@ -161,7 +131,7 @@ const centerFullMap = () => {
 
               <View style={styles.fullTitleWrap}>
                 <Text style={styles.fullEyebrow}>KHON KAEN · POI</Text>
-                <Text style={styles.fullTitle}>
+                <Text numberOfLines={1} style={styles.fullTitle}>
                   {poi.name}
                 </Text>
               </View>
@@ -169,7 +139,6 @@ const centerFullMap = () => {
               <Pressable
                 accessibilityLabel="เลื่อนแผนที่กลับไปที่หมุด"
                 accessibilityRole="button"
-                hitSlop={4}
                 onPress={centerFullMap}
                 style={({ pressed }) => [styles.circleButton, pressed && styles.pressed]}
               >
@@ -184,7 +153,7 @@ const centerFullMap = () => {
               <View style={styles.fullCopy}>
                 <Text style={styles.fullCategory}>{poi.category}</Text>
                 <Text style={styles.fullName}>{poi.name}</Text>
-                <Text style={styles.fullAddress}>
+                <Text numberOfLines={2} style={styles.fullAddress}>
                   {poi.address}
                 </Text>
                 <Text style={styles.fullCoordinates}>
@@ -249,7 +218,6 @@ const styles = StyleSheet.create({
     right: 22,
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 48,
     borderRadius: 13,
     backgroundColor: colors.gold,
     paddingHorizontal: 10,

@@ -1,31 +1,55 @@
-import { useCallback, useRef, useState } from 'react';
-import { FlatList, Image, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { Link, useFocusEffect } from 'expo-router';
+import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { PoiMap } from '../components/PoiMap';
 import { pointsOfInterest } from '../data/pointsOfInterest';
+import { getFavoritePoiIds, toggleFavoritePoi } from '../services/favorites';
 import { colors } from '../theme/colors';
-import { useReduceMotion } from '../features/accessibility/hooks/useReduceMotion';
 import type { PointOfInterest } from '../types/poi';
 
 const dinoLogo = require('../../assets/khon-kaen-dino-icon.png');
+const categories = ['ทั้งหมด', ...Array.from(new Set(pointsOfInterest.map((poi) => poi.category)))];
 
 export function PoiExplorerScreen() {
   const [selectedPoi, setSelectedPoi] = useState(pointsOfInterest[0]);
+  const [favoriteIds, setFavoriteIds] = useState<string[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
   const listRef = useRef<FlatList<PointOfInterest>>(null);
-  const reduceMotion = useReduceMotion();
 
-  const selectPoi = useCallback((poi: PointOfInterest) => {
+  const filteredPoints = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    return pointsOfInterest.filter((poi) => {
+      const matchesCategory = selectedCategory === 'ทั้งหมด' || poi.category === selectedCategory;
+      const searchable = [poi.name, poi.category, poi.address, poi.description].join(' ').toLowerCase();
+      const matchesSearch = !query || searchable.includes(query);
+      return matchesCategory && matchesSearch;
+    });
+  }, [searchQuery, selectedCategory]);
+
+  useFocusEffect(
+    useCallback(() => {
+      getFavoritePoiIds().then(setFavoriteIds);
+    }, []),
+  );
+
+  const toggleTrip = async () => {
+    setFavoriteIds(await toggleFavoritePoi(selectedPoi.id));
+  };
+
+  const selectPoi = (poi: PointOfInterest) => {
     setSelectedPoi(poi);
     setTimeout(() => {
-      listRef.current?.scrollToOffset({ offset: 355, animated: !reduceMotion });
+      listRef.current?.scrollToOffset({ offset: 355, animated: true });
     }, 80);
-  }, [reduceMotion]);
+  };
 
   return (
     <FlatList
       ref={listRef}
       contentContainerStyle={styles.content}
-      data={pointsOfInterest}
+      data={filteredPoints}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
@@ -34,7 +58,7 @@ export function PoiExplorerScreen() {
             <View style={styles.orbitSmall} />
             <View style={styles.heroTopRow}>
               <View style={styles.brandLockup}>
-                <Image accessible={false} source={dinoLogo} style={styles.logo} />
+                <Image source={dinoLogo} style={styles.logo} />
                 <View>
                   <Text style={styles.brandEyebrow}>KHON KAEN</Text>
                   <Text style={styles.brandName}>DINO EXPLORER</Text>
@@ -46,7 +70,7 @@ export function PoiExplorerScreen() {
               </View>
             </View>
 
-            <Text accessibilityRole="header" style={styles.heroTitle}>ตามรอยเมืองไดโนเสาร์{`\n`}เที่ยวขอนแก่นให้ครบ</Text>
+            <Text style={styles.heroTitle}>ตามรอยเมืองไดโนเสาร์{`\n`}เที่ยวขอนแก่นให้ครบ</Text>
             <Text style={styles.heroSubtitle}>
               รวมหมุดแลนด์มาร์กสำคัญ เลือกหนึ่งสถานที่แล้วออกสำรวจบนแผนที่ได้ทันที
             </Text>
@@ -61,10 +85,65 @@ export function PoiExplorerScreen() {
             </View>
           </View>
 
+          <View style={styles.searchSection}>
+            <Text style={styles.sectionEyebrow}>SEARCH & FILTER</Text>
+            <Text style={styles.searchTitle}>ค้นหาสถานที่</Text>
+            <TextInput
+              accessibilityLabel="ค้นหาสถานที่"
+              value={searchQuery}
+              onChangeText={setSearchQuery}
+              placeholder="ค้นหาชื่อ หมวด หรือที่อยู่…"
+              placeholderTextColor="#8A93A2"
+              returnKeyType="search"
+              style={styles.searchInput}
+            />
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.filterRow}
+            >
+              {categories.map((category) => {
+                const selected = selectedCategory === category;
+                return (
+                  <Pressable
+                    key={category}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected }}
+                    onPress={() => setSelectedCategory(category)}
+                    style={[styles.filterChip, selected && styles.filterChipSelected]}
+                  >
+                    <Text style={[styles.filterChipText, selected && styles.filterChipTextSelected]}>
+                      {category}
+                    </Text>
+                  </Pressable>
+                );
+              })}
+            </ScrollView>
+
+            <View style={styles.searchMetaRow}>
+              <Text style={styles.searchMeta}>
+                พบ {filteredPoints.length} จาก {pointsOfInterest.length} สถานที่
+              </Text>
+              {(searchQuery || selectedCategory !== 'ทั้งหมด') && (
+                <Pressable
+                  accessibilityRole="button"
+                  onPress={() => {
+                    setSearchQuery('');
+                    setSelectedCategory('ทั้งหมด');
+                  }}
+                >
+                  <Text style={styles.clearFilterText}>ล้างตัวกรอง</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+
+
           <View style={styles.mapSectionHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>INTERACTIVE MAP</Text>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>แผนที่สำรวจ</Text>
+              <Text style={styles.sectionTitle}>แผนที่สำรวจ</Text>
               <Text style={styles.sectionSubtitle}>กด “ขยายแผนที่” เพื่อดูแบบเต็มจอ</Text>
             </View>
             <View style={styles.liveBadge}>
@@ -75,11 +154,7 @@ export function PoiExplorerScreen() {
 
           <PoiMap poi={selectedPoi} />
 
-          <View
-            accessible
-            accessibilityLabel={`สถานที่ที่เลือก ${selectedPoi.name}, ${selectedPoi.category}, ${selectedPoi.address}`}
-            style={styles.selectedCard}
-          >
+          <View style={styles.selectedCard}>
             <View style={styles.selectedTopRow}>
               <View style={styles.selectedIcon}>
                 <Text style={styles.selectedIconText}>{selectedPoi.icon}</Text>
@@ -102,12 +177,28 @@ export function PoiExplorerScreen() {
                 {selectedPoi.latitude.toFixed(5)} · {selectedPoi.longitude.toFixed(5)}
               </Text>
             </View>
+
+            <View style={styles.tripActions}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={favoriteIds.includes(selectedPoi.id) ? 'นำสถานที่ออกจากทริป' : 'เพิ่มสถานที่เข้าทริป'}
+                onPress={toggleTrip}
+                style={[styles.tripButton, favoriteIds.includes(selectedPoi.id) && styles.tripButtonSelected]}
+              >
+                <Text style={[styles.tripButtonText, favoriteIds.includes(selectedPoi.id) && styles.tripButtonTextSelected]}>
+                  {favoriteIds.includes(selectedPoi.id) ? '✓ อยู่ใน My Trip แล้ว' : '+ เพิ่มเข้าทริป'}
+                </Text>
+              </Pressable>
+              <Link href="/trip" accessibilityRole="button" style={styles.tripLink}>
+                <Text style={styles.tripLinkText}>ดู My Trip →</Text>
+              </Link>
+            </View>
           </View>
 
           <View style={styles.listHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>CURATED COLLECTION</Text>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>10 สถานที่สำคัญ</Text>
+              <Text style={styles.sectionTitle}>10 สถานที่สำคัญ</Text>
             </View>
             <Text style={styles.listHint}>แตะเพื่อเลือก</Text>
           </View>
@@ -118,7 +209,6 @@ export function PoiExplorerScreen() {
 
         return (
           <Pressable
-            accessibilityLabel={`${item.name}, ${item.category}, ${item.address}`}
             accessibilityHint="แสดงตำแหน่งสถานที่นี้บนแผนที่"
             accessibilityRole="button"
             accessibilityState={{ selected }}
@@ -141,7 +231,7 @@ export function PoiExplorerScreen() {
               <Text style={[styles.poiName, selected && styles.poiNameSelected]}>
                 {item.name}
               </Text>
-              <Text style={[styles.poiMeta, selected && styles.poiMetaSelected]}>
+              <Text numberOfLines={1} style={[styles.poiMeta, selected && styles.poiMetaSelected]}>
                 {item.category} · {item.address}
               </Text>
             </View>
@@ -153,6 +243,12 @@ export function PoiExplorerScreen() {
           </Pressable>
         );
       }}
+      ListEmptyComponent={
+        <View style={styles.emptySearch}>
+          <Text style={styles.emptySearchTitle}>ไม่พบสถานที่</Text>
+          <Text style={styles.emptySearchText}>ลองเปลี่ยนคำค้นหา หรือเลือกหมวด “ทั้งหมด”</Text>
+        </View>
+      }
       showsVerticalScrollIndicator={false}
     />
   );
@@ -536,6 +632,130 @@ const styles = StyleSheet.create({
     color: colors.navy,
     fontSize: 13,
     fontWeight: '900',
+  },
+  tripActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 14,
+  },
+  tripButton: {
+    flex: 1,
+    alignItems: 'center',
+    borderRadius: 14,
+    backgroundColor: colors.gold,
+    paddingVertical: 12,
+    paddingHorizontal: 12,
+  },
+  tripButtonSelected: {
+    backgroundColor: colors.navy,
+  },
+  tripButtonText: {
+    color: colors.navy,
+    fontSize: 11,
+    fontWeight: '900',
+  },
+  tripButtonTextSelected: {
+    color: colors.gold,
+  },
+  tripLink: {
+    marginLeft: 9,
+    borderRadius: 14,
+    backgroundColor: '#EEF2F7',
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+  },
+  tripLinkText: {
+    color: colors.navy,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  searchSection: {
+    marginTop: 28,
+    borderRadius: 24,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
+    padding: 16,
+  },
+  searchTitle: {
+    color: colors.text,
+    fontSize: 20,
+    fontWeight: '900',
+    marginBottom: 11,
+  },
+  searchInput: {
+    minHeight: 48,
+    borderRadius: 15,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#F8F9FB',
+    color: colors.text,
+    fontSize: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 11,
+  },
+  filterRow: {
+    paddingTop: 12,
+    paddingBottom: 2,
+    paddingRight: 8,
+  },
+  filterChip: {
+    minHeight: 40,
+    justifyContent: 'center',
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: '#F4F0E6',
+    paddingHorizontal: 14,
+    marginRight: 8,
+  },
+  filterChipSelected: {
+    borderColor: colors.navy,
+    backgroundColor: colors.navy,
+  },
+  filterChipText: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '800',
+  },
+  filterChipTextSelected: {
+    color: colors.gold,
+  },
+  searchMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 10,
+  },
+  searchMeta: {
+    color: colors.textMuted,
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  clearFilterText: {
+    color: colors.goldDark,
+    fontSize: 10,
+    fontWeight: '900',
+  },
+  emptySearch: {
+    alignItems: 'center',
+    borderRadius: 20,
+    backgroundColor: '#F4F0E6',
+    paddingHorizontal: 20,
+    paddingVertical: 26,
+    marginTop: 4,
+  },
+  emptySearchTitle: {
+    color: colors.navy,
+    fontSize: 16,
+    fontWeight: '900',
+  },
+  emptySearchText: {
+    color: colors.textMuted,
+    fontSize: 11,
+    lineHeight: 17,
+    textAlign: 'center',
+    marginTop: 5,
   },
   pressed: {
     opacity: 0.72,

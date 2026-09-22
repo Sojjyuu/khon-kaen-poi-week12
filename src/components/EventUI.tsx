@@ -1,36 +1,11 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 import { colors } from '../theme/colors';
 
-type ActionProps = {
-  title: string;
-  onPress: () => void;
-  disabled?: boolean;
-  accessibilityHint?: string;
-};
-
-export function Action({
-  title,
-  onPress,
-  disabled = false,
-  accessibilityHint,
-}: ActionProps) {
-  return (
-    <Pressable
-      accessibilityHint={accessibilityHint}
-      accessibilityLabel={title}
-      accessibilityRole="button"
-      accessibilityState={{ disabled }}
-      disabled={disabled}
-      hitSlop={4}
-      onPress={onPress}
-      style={({ pressed }) => [
-        eventStyles.button,
-        (pressed || disabled) && eventStyles.buttonInactive,
-      ]}
-    >
-      <Text style={eventStyles.buttonText}>{title}</Text>
-    </Pressable>
-  );
+export function Action({ title, onPress, disabled = false }: { title: string; onPress: () => void; disabled?: boolean }) {
+  return <Pressable accessibilityRole="button" accessibilityState={{ disabled }} disabled={disabled}
+    onPress={onPress} style={({ pressed }) => [eventStyles.button, (pressed || disabled) && { opacity: 0.5 }]}>
+    <Text style={eventStyles.buttonText}>{title}</Text>
+  </Pressable>;
 }
 
 export const eventStyles = StyleSheet.create({
@@ -39,9 +14,8 @@ export const eventStyles = StyleSheet.create({
   subtitle: { fontSize: 18, fontWeight: '700', color: colors.navy },
   text: { fontSize: 15, lineHeight: 24, color: colors.textMuted },
   card: { padding: 20, gap: 12, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  button: { minHeight: 48, backgroundColor: colors.navy, paddingHorizontal: 15, paddingVertical: 12, borderRadius: 14, alignItems: 'center', justifyContent: 'center' },
-  buttonInactive: { opacity: 0.5 },
-  buttonText: { color: colors.gold, fontSize: 16, lineHeight: 22, fontWeight: '700', textAlign: 'center', flexShrink: 1 },
+  button: { backgroundColor: colors.navy, padding: 15, borderRadius: 14, alignItems: 'center' },
+  buttonText: { color: colors.gold, fontSize: 16, fontWeight: '700' },
   input: { borderWidth: 1, borderColor: colors.border, borderRadius: 12, padding: 14, fontSize: 16, backgroundColor: '#fff', color: colors.text },
-  error: { color: '#8F1D14', fontSize: 15, lineHeight: 23, fontWeight: '600' },
+  error: { color: '#A62B20', fontSize: 15, lineHeight: 23 },
 });
