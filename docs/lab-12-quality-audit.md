@@ -134,7 +134,7 @@ Week 12 เปลี่ยนเฉพาะจุดที่มีเหตุ
 - [x] Invalid Event ID: แสดง “ไม่พบกิจกรรม” และ focus ไปที่ข้อความสถานะ
 - [x] ลบกิจกรรมส่วนตัว: confirmation และปุ่มลบอ่านเข้าใจได้
 
-รายการนี้ต้องยืนยันบนอุปกรณ์จริง เพราะ automated tests ไม่สามารถฟัง screen reader หรือยืนยัน layout ที่ font scale 200% ได้
+รายการนี้ถูกยืนยันบนอุปกรณ์จริงแล้ว เพราะ automated tests ไม่สามารถฟัง screen reader หรือยืนยัน layout ที่ font scale 200% ได้
 
 ---
 
@@ -146,7 +146,7 @@ npm run typecheck
 npx expo-doctor
 ```
 
-ผลตรวจบน GitHub Actions ของ `main` ล่าสุด: **12/12 tests ผ่าน, 0 fail และ TypeScript check ผ่าน**
+ผลตรวจบน GitHub Actions ของ `main`: **12/12 tests ผ่าน, 0 fail, TypeScript check ผ่าน และ Web export ผ่าน**
 
 `tests/architecture.test.cjs` ตรวจ regression สำคัญ:
 
