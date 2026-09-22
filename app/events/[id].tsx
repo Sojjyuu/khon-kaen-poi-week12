@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import {
-  AccessibilityInfo,
   Alert,
-  findNodeHandle,
   ScrollView,
   Text,
   View,
@@ -18,6 +16,7 @@ import {
   isUserCreatedEventId,
 } from '../../src/features/events/types';
 import { formatEventTime } from '../../src/repositories/eventRepository';
+import { focusAccessibilityTarget } from '../../src/features/accessibility/focusAccessibilityTarget';
 
 export default function EventDetail() {
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
@@ -41,8 +40,7 @@ export default function EventDetail() {
   useEffect(() => {
     if (loading || (event && !error)) return;
     const timer = setTimeout(() => {
-      const node = findNodeHandle(statusRef.current);
-      if (node) AccessibilityInfo.setAccessibilityFocus(node);
+      focusAccessibilityTarget(statusRef.current);
     }, 150);
     return () => clearTimeout(timer);
   }, [error, event, loading]);
@@ -141,6 +139,7 @@ export default function EventDetail() {
           <View style={styles.card}>
             <Text
               ref={statusRef}
+              focusable
               accessibilityLiveRegion="assertive"
               accessibilityRole="alert"
               style={styles.error}
@@ -153,6 +152,7 @@ export default function EventDetail() {
           <View style={styles.card}>
             <Text
               ref={statusRef}
+              focusable
               accessibilityLiveRegion="assertive"
               accessibilityRole="header"
               style={styles.title}
