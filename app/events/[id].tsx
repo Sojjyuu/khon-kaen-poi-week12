@@ -35,7 +35,7 @@ export default function EventDetail() {
 
   const [busy, setBusy] = useState(false);
   const busyRef = useRef(false);
-  const statusRef = useRef<Text>(null);
+  const statusRef = useRef<View>(null);
 
   useEffect(() => {
     if (loading || (event && !error)) return;
@@ -136,27 +136,28 @@ export default function EventDetail() {
             กำลังโหลด…
           </Text>
         ) : error ? (
-          <View style={styles.card}>
-            <Text
-              ref={statusRef}
-              focusable
-              accessibilityLiveRegion="assertive"
-              accessibilityRole="alert"
-              style={styles.error}
-            >
-              {error}
-            </Text>
+          <View
+            ref={statusRef}
+            accessible
+            focusable
+            accessibilityLiveRegion="assertive"
+            accessibilityRole="alert"
+            style={styles.card}
+          >
+            <Text style={styles.error}>{error}</Text>
             <Action title="ลองอีกครั้ง" onPress={() => void refresh()} />
           </View>
         ) : !event ? (
-          <View style={styles.card}>
-            <Text
-              ref={statusRef}
-              focusable
-              accessibilityLiveRegion="assertive"
-              accessibilityRole="header"
-              style={styles.title}
-            >
+          <View
+            ref={statusRef}
+            accessible
+            focusable
+            accessibilityLabel="ไม่พบกิจกรรม ลิงก์ไม่ถูกต้อง หรือกิจกรรมนี้ไม่มีอยู่ในเครื่องแล้ว"
+            accessibilityLiveRegion="assertive"
+            accessibilityRole="alert"
+            style={styles.card}
+          >
+            <Text accessibilityRole="header" style={styles.title}>
               ไม่พบกิจกรรม
             </Text>
             <Text style={styles.text}>
