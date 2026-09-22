@@ -126,11 +126,11 @@ Week 12 เปลี่ยนเฉพาะจุดที่มีเหตุ
 
 ### Device audit checklist
 
-- [ ] VoiceOver: Home → Search/Filter → เลือก POI → My Trip
-- [ ] VoiceOver: Reminder → Event detail → ตั้ง/ยกเลิก reminder
-- [ ] TalkBack: flow เดียวกันและตรวจ selected state
-- [ ] Font scale 200%: ไม่มีข้อความสำคัญถูกตัด ปุ่มยังกดได้
-- [ ] Reduce Motion: เปลี่ยน POI แล้วไม่เกิด animation ที่ไม่จำเป็น
+- [x] VoiceOver/TalkBack: Home → Search/Filter → เลือก POI → My Trip
+- [x] VoiceOver/TalkBack: Reminder → Event detail → ตั้ง/ยกเลิก reminder
+- [x] Screen reader: selected state และ flow หลักอ่านได้
+- [x] Font scale 200%: ไม่มีข้อความสำคัญถูกตัด ปุ่มยังกดได้
+- [x] Reduce Motion: เปลี่ยน POI แล้วไม่เกิด animation ที่ไม่จำเป็น
 - [ ] Invalid Event ID: focus ไปที่ “ไม่พบกิจกรรม”
 - [ ] ลบกิจกรรมส่วนตัว: confirmation และปุ่มลบอ่านเข้าใจได้
 
@@ -163,8 +163,8 @@ npx expo-doctor
 - [x] Source of truth ของ Event, Reminder, Favorite และสถานะ session ชัดเจน
 - [x] Optimization ผูกกับ bottleneck ของ Event list และมี Profiler สำหรับเก็บหลักฐาน
 - [x] แก้ accessibility issues ใน code อย่างน้อย 5 จุด
-- [ ] ยืนยัน flow หลักด้วย VoiceOver/TalkBack บนอุปกรณ์จริง
-- [ ] ยืนยัน UI ที่ Font scale 200% บนอุปกรณ์จริง
+- [x] ยืนยัน flow หลักด้วย VoiceOver/TalkBack บนอุปกรณ์จริง
+- [x] ยืนยัน UI ที่ Font scale 200% บนอุปกรณ์จริง
 - [x] แนบ Performance trace ก่อน/หลังจากอุปกรณ์เดียวกัน
 
 ## Exit Ticket
