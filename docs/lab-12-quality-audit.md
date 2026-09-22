@@ -131,7 +131,7 @@ Week 12 เปลี่ยนเฉพาะจุดที่มีเหตุ
 - [x] Screen reader: selected state และ flow หลักอ่านได้
 - [x] Font scale 200%: ไม่มีข้อความสำคัญถูกตัด ปุ่มยังกดได้
 - [x] Reduce Motion: เปลี่ยน POI แล้วไม่เกิด animation ที่ไม่จำเป็น
-- [ ] Invalid Event ID: focus ไปที่ “ไม่พบกิจกรรม”
+- [x] Invalid Event ID: แสดง “ไม่พบกิจกรรม” และ focus ไปที่ข้อความสถานะ
 - [x] ลบกิจกรรมส่วนตัว: confirmation และปุ่มลบอ่านเข้าใจได้
 
 รายการนี้ต้องยืนยันบนอุปกรณ์จริง เพราะ automated tests ไม่สามารถฟัง screen reader หรือยืนยัน layout ที่ font scale 200% ได้
