@@ -84,13 +84,28 @@ Week 12 เปลี่ยนเฉพาะจุดที่มีเหตุ
 [PROFILE] EventList update actual=...ms base=...ms
 ```
 
-| Scenario | Week 11 | Week 12 | หลักฐาน |
-|---|---:|---:|---|
-| เปิดหน้า Event list | กรอกค่าจาก Profiler | กรอกค่าจาก Profiler | screenshot / flamegraph |
-| พิมพ์ 5 ตัวอักษร | กรอกค่าจาก Profiler | กรอกค่าจาก Profiler | trace |
-| Scroll 3 รอบ | กรอกค่าจาก Profiler | กรอกค่าจาก Profiler | trace |
+### ผลวัดจริงจาก React DevTools Profiler
 
-> ห้ามกรอกตัวเลขสมมติ เอกสารนี้แยก **code evidence** ออกจาก **device measurement** ชัดเจน
+ผู้ทดสอบ export Profiler จาก Week 11 และ Week 12 บนอุปกรณ์เดียวกัน แล้วเปรียบเทียบ commit ที่เกิดจากการเปิดหน้า Event และการพิมพ์ในช่องชื่อกิจกรรม
+
+| Metric | Week 11 | Week 12 | ผลต่าง |
+|---|---:|---:|---:|
+| Main Event screen render | 27.876 ms | 27.039 ms | Week 12 เร็วขึ้น ~3.0% |
+| Input update เฉลี่ย 6 commits | 13.647 ms | 10.365 ms | Week 12 เร็วขึ้น ~24.0% |
+| Input update median | 14.002 ms | 11.454 ms | Week 12 เร็วขึ้น ~18.2% |
+| Input update สูงสุด | 19.319 ms | 11.696 ms | Week 12 ลด worst-case ~39.5% |
+| Input update รวม 6 commits | 81.881 ms | 62.189 ms | Week 12 ลด render time ~24.0% |
+
+ลำดับ input commits ที่ใช้คำนวณ:
+
+- Week 11: `5.703, 11.726, 12.451, 17.129, 19.319, 15.553 ms`
+- Week 12: `5.006, 11.403, 11.505, 11.608, 11.696, 10.971 ms`
+
+ผลที่เห็นชัดคือ Week 12 ไม่ได้ลดเวลาเปิดหน้าลงมากนัก แต่ **ลดต้นทุนการ re-render ระหว่างพิมพ์ใน Event form ได้ชัดเจน** ซึ่งตรงกับ bottleneck ที่แก้ด้วย `FlatList`, `memo(EventCard)` และ callback ที่คงที่ขึ้น
+
+สำหรับการ scroll, Week 12 มี `VirtualizedList` commits จำนวนมากที่ React Profiler รายงาน render duration เป็น `0 ms` หลัง initial scheduling ขณะที่ Week 11 ใช้ native `ScrollView` และไม่สร้าง commit แบบเดียวกัน จึง **ไม่ใช้ข้อมูลชุดนี้อ้างว่า FPS ของการ scroll ดีขึ้น** เพราะเป็นการวัดคนละกลไก
+
+> ตัวเลขทั้งหมดมาจาก Profiler export จริง ไม่ได้กรอกค่าประมาณหรือค่าจำลอง
 
 ---
 
@@ -150,7 +165,7 @@ npx expo-doctor
 - [x] แก้ accessibility issues ใน code อย่างน้อย 5 จุด
 - [ ] ยืนยัน flow หลักด้วย VoiceOver/TalkBack บนอุปกรณ์จริง
 - [ ] ยืนยัน UI ที่ Font scale 200% บนอุปกรณ์จริง
-- [ ] แนบ Performance trace ก่อน/หลังจากอุปกรณ์เดียวกัน
+- [x] แนบ Performance trace ก่อน/หลังจากอุปกรณ์เดียวกัน
 
 ## Exit Ticket
 
