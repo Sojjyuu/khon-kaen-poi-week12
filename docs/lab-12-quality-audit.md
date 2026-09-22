@@ -131,6 +131,8 @@ npm run typecheck
 npx expo-doctor
 ```
 
+ผลตรวจบน GitHub Actions ของ `main` ล่าสุด: **12/12 tests ผ่าน, 0 fail และ TypeScript check ผ่าน**
+
 `tests/architecture.test.cjs` ตรวจ regression สำคัญ:
 
 - Event screens ห้าม import AsyncStorage / Expo Notifications โดยตรง
