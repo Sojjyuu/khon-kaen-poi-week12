@@ -62,6 +62,8 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         : {}),
     },
     web: {
+      bundler: 'metro',
+      output: 'single',
       favicon: './assets/khon-kaen-dino-favicon.png',
     },
   };
