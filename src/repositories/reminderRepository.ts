@@ -106,3 +106,9 @@ export function createReminderRepository(
 }
 
 export const reminderRepository = createReminderRepository();
+
+export function responseEventId(
+  response: Parameters<typeof notificationService.responseData>[0],
+) {
+  return validResponse(notificationService.responseData(response));
+}
