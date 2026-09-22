@@ -1,33 +1,46 @@
-# Khon Kaen Dino Explorer
+# Khon Kaen Dino Explorer — Week 12
 
-## Week 12: Architecture, Performance และ Accessibility
+Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architecture, Performance และ Accessibility** โดยไม่เพิ่ม scope ฟีเจอร์ที่ไม่จำเป็น
 
-Week 12 ใช้ฟีเจอร์จาก Week 11 เป็นฐาน แล้วหยุดเพิ่ม scope เพื่อทำ quality audit ตามโจทย์:
+## สิ่งที่ทำใน Week 12
 
 - แยก Event/Reminder เป็น `screen → feature hook → repository → storage/device service`
-- Event list ใช้ `FlatList` + stable key + memoized `EventCard` และ React Profiler
-- ปรับ accessibility: heading semantics, live region/error focus, touch target ≥ 48px, POI labels/selected state, font-scale friendly layout และ Reduce Motion
-- เก็บ Search/Filter, My Trip, Camera + Filter + Save Photos, Profile และ Notification flow เดิมไว้
-- ลบกิจกรรมส่วนตัวได้ พร้อมยกเลิก reminder ของกิจกรรมนั้น
+- กำหนด source of truth ของ Event, Reminder, Favorites และ POI
+- เปลี่ยน Event list เป็น `FlatList`
+- แยกและ `memo` `EventCard`
+- ใช้ callback ที่ stable เฉพาะจุดที่เกี่ยวกับ list
+- เพิ่ม React Profiler เพื่อเก็บหลักฐานก่อน/หลัง
+- ปรับ accessibility semantics, live region, error focus และ touch target
+- รองรับ Font Scale 200%
+- รองรับ Reduce Motion
+- ทดสอบ VoiceOver/TalkBack flow
+- ทดสอบ Invalid Event ID focus
+- เพิ่ม Web-safe adapters สำหรับ Map, Notification และ Media Library
+- คง Search/Filter, My Trip, Camera, Profile และ Reminder จาก Week 11
 
-เอกสารส่งงาน Week 12 (Architecture diagram, Performance review และ Accessibility audit):
+## Performance ที่วัดได้
 
-[docs/lab-12-quality-audit.md](docs/lab-12-quality-audit.md)
+| Metric | Week 11 | Week 12 |
+|---|---:|---:|
+| Main Event screen | 27.876 ms | 27.039 ms |
+| Input update เฉลี่ย | 13.647 ms | 10.365 ms |
+| Input update worst-case | 19.319 ms | 11.696 ms |
+| Input update รวม 6 commits | 81.881 ms | 62.189 ms |
 
-โครงสร้างหลักของ Week 12:
+รายละเอียดวิธีวัดและข้อจำกัดอยู่ใน [Lab 12 Quality Audit](docs/lab-12-quality-audit.md)
 
-```text
-app/                         routes / screen composition
-src/features/                feature UI, hooks, types
-src/repositories/            use cases + orchestration
-src/services/                device / performance adapters
-src/storage/                 AsyncStorage boundary
-src/components/              reusable shared UI
-tests/                       regression + architecture checks
-docs/                        audit evidence/report
-```
+## Accessibility / Device tests
 
-ก่อนทดสอบบนเครื่อง:
+ทดสอบแล้ว:
+
+- VoiceOver / TalkBack flow หลัก
+- selected state
+- Font Scale 200%
+- Reduce Motion
+- Invalid Event ID + accessibility focus
+- ลบกิจกรรมส่วนตัว
+
+## ติดตั้งและรัน
 
 ```bash
 npm install
@@ -36,105 +49,37 @@ npm run typecheck
 npx expo start -c
 ```
 
-> VoiceOver/TalkBack, Font Scale 200% และ Performance trace ก่อน/หลังยังต้องเก็บหลักฐานบนอุปกรณ์จริงตาม checklist ในเอกสาร ไม่ควรใส่ตัวเลขสมมติ
-
----
-
-
-## Lab 11: กิจกรรมและการแจ้งเตือน
-
-หน้าแรกมีปุ่ม **กิจกรรมและการแจ้งเตือน** สำหรับดู/สร้างกิจกรรม ตั้งเตือนก่อนเริ่ม 30 นาที ยกเลิกเตือน และทดสอบ notification ใน 15 วินาที แตะ notification เพื่อเปิด `/events/[id]` ผ่าน Expo Router
-
-หลังอัปเดตแพ็กเกจ ให้หยุด Metro เดิมแล้วรัน `npx expo start --clear` อีกครั้ง
-
-ดู [คู่มือ Lab 11, lifecycle diagram, ตารางทดสอบ และขั้นตอนถ่ายวิดีโอ](docs/lab-11-notifications.md) การทดสอบอัตโนมัติรันด้วย `npm test` และ `npm run check`; การส่ง notification และ cold start ยังต้องยืนยันบนอุปกรณ์จริง
-
-แอป Expo + React Native + TypeScript ธีมเมืองไดโนเสาร์ สำหรับแสดง Point of Interest จำนวน 10 แห่งในจังหวัดขอนแก่น เมื่อกดเลือกสถานที่จากรายการ แผนที่จะเลื่อนไปยังพิกัดของสถานที่นั้นและแสดงชื่อกำกับบนแผนที่
-
-## ฟีเจอร์ตามโจทย์
-
-- รายชื่อสถานที่สำคัญในขอนแก่นครบ 10 แห่ง
-- กดเลือกสถานที่จากรายการได้
-- แผนที่เลื่อนไปยังตำแหน่งของสถานที่ที่เลือก
-- แสดง Marker สีแดงบนตำแหน่งที่เลือก
-- แสดงชื่อสถานที่ทั้งในป้ายบนแผนที่และ Marker callout
-- กด “ขยายแผนที่” เพื่อดู เลื่อน และซูมแผนที่แบบเต็มหน้าจอ
-- กดปุ่ม `◎` ในแผนที่เต็มจอเพื่อเลื่อนกลับมายังหมุดที่เลือก
-- รายการที่เลือกมีสีและเครื่องหมายกำกับอย่างชัดเจน
-- แสดงประเภท ที่อยู่ คำอธิบาย และพิกัดของสถานที่
-- รองรับ Android ด้วย Google Maps และ iOS ด้วย Apple Maps
-- แอปไม่ขอ Location permission เพราะโจทย์นี้ใช้พิกัดสถานที่ที่กำหนดไว้ล่วงหน้า
-- UI โทนน้ำเงิน–ทอง พร้อมไอคอนไดโนเสาร์สีเหลือง
-
-## สถานที่ทั้ง 10 แห่ง
-
-1. มหาวิทยาลัยขอนแก่น
-2. บึงแก่นนคร
-3. พระมหาธาตุแก่นนคร
-4. ศาลหลักเมืองขอนแก่น
-5. เซ็นทรัล ขอนแก่น
-6. สถานีรถไฟขอนแก่น
-7. ตลาดต้นตาล
-8. พิพิธภัณฑสถานแห่งชาติ ขอนแก่น
-9. ศูนย์ประชุมและแสดงสินค้านานาชาติขอนแก่น (KICE)
-10. ท่าอากาศยานขอนแก่น
-
-## วิธีติดตั้งและรัน
+ทดสอบ Web:
 
 ```bash
-npm install
-npm run typecheck
-npx expo start
+npm run webcheck
+npx expo start --web -c
 ```
 
-จากนั้นเปิด Expo Go และสแกน QR Code หรือกด `a` เพื่อเปิดใน Android Emulator
-
-## โครงสร้างสำคัญ
+Invalid Event route:
 
 ```text
-src/
-  components/PoiMap.tsx         แผนที่ Marker และป้ายชื่อสถานที่
-  data/pointsOfInterest.ts      ข้อมูลสถานที่สำคัญ 10 แห่ง
-  screens/PoiExplorerScreen.tsx หน้ารายการและรายละเอียดสถานที่
-  theme/colors.ts               ชุดสีของแอป
-  types/poi.ts                  TypeScript type ของ POI
+http://localhost:8081/events/not-found-test
 ```
 
-## Android Production Build
+## Automated quality checks
 
-Expo Go ใช้ทดสอบงานพื้นฐานได้ หากสร้าง Android binary สำหรับเผยแพร่ ให้เปิด Maps SDK for Android และสร้าง Google Maps API key โดยจำกัด key ด้วย:
+GitHub Actions workflow: **Week 12 Quality Check**
 
-- Android package: `com.sojjyu.khonkaenpoi`
-- SHA-1 ของ signing certificate ที่ใช้สร้างแอป
+ตรวจ:
 
-เก็บ key เป็น EAS Environment Variable ชื่อ `GOOGLE_MAPS_ANDROID_API_KEY` แล้วสร้าง binary ใหม่ เพราะ API key ถูกฝังใน native application
+- tests
+- TypeScript
+- Expo Web export
 
-```bash
-npx eas-cli env:create --name GOOGLE_MAPS_ANDROID_API_KEY --environment production --visibility secret
-npx eas-cli build --profile production --platform android
-```
+## เอกสารส่งงาน
 
-## ก่อนส่ง GitHub
+- [Lab 12 Quality Audit](docs/lab-12-quality-audit.md)
+- [Final Submission Checklist](docs/final-submission.md)
+- [Lab 11 Notifications](docs/lab-11-notifications.md)
 
-```bash
-git init
-git add .
-git commit -m "Create Khon Kaen POI map app"
-git branch -M main
-git remote add origin URL_REPOSITORY_ของนักศึกษา
-git push -u origin main
-```
+## Repository สำหรับส่ง
 
-ไม่ควรอัปโหลด `node_modules`, `.expo`, `.env` หรือ API key จริงขึ้น GitHub
+https://github.com/Sojjyuu/khon-kaen-poi-week12
 
-## Final Assignment Integration (Assignments ก่อน Week 11)
-โปรเจกต์นี้รวม Assignment เดิมให้ทำงานต่อเนื่องในแอปเดียว ไม่ได้นำหลายโปรเจกต์มาวางรวมกันเฉย ๆ
-
-- **Profile** → หน้า `/profile` สำหรับข้อมูลผู้พัฒนา
-- **Pokemon Team Builder concept** → หน้า `/trip` ใช้แนวคิดเลือก/ลบรายการและจัดกลุ่มสถานที่เป็น **My Trip** พร้อมบันทึกด้วย AsyncStorage
-- **Camera** → หน้า `/camera` ใช้ Camera / Image Picker เพื่อถ่ายหรือเลือกรูปการเดินทาง
-- **Location and Map** → หน้าแรกใช้ POI + Map + Marker และแผนที่เต็มหน้าจอ
-- **Week 11 Notifications** → `/events` สำหรับสร้างกิจกรรม ตั้ง/ยกเลิก reminder และเปิด Event detail จาก notification
-
-### Camera dependencies
-หลัง Clone ใช้ `npm install` เพื่อดึง `expo-image-picker`, `expo-media-library` และ `react-native-view-shot` ตาม `package.json` จากนั้นทดสอบ Camera / Filter / Save Photos บนอุปกรณ์จริง
+ใช้ branch `main` และไม่อัปโหลด `node_modules`, `.expo`, `.env` หรือ secret/API key
