@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../src/theme/colors';
 
-const profileImage = { uri: 'https://raw.githubusercontent.com/Sojjyuu/khon-kaen-dino-explorer-Week11/main/assets/profile-oc.png' };
+const profileImage = require('../assets/profile-week12.jpg');
 
 const PROFILE = {
   name: 'Kirati Suwanpusit',
