@@ -20,6 +20,10 @@ Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architect
 
 ## Performance ที่วัดได้
 
+Profiler รอบล่าสุดที่ผู้ทดสอบส่งหลังรวมการแก้ Android พบ input commits อย่างละ 5 ครั้ง: ค่าเฉลี่ย **Week 11 14.600 ms → Week 12 12.055 ms** ต่อ commit (ลดลง 17.4% ในรอบนี้) เป็นเวลาที่ React ใช้ render จึงยังไม่ใช่ค่า FPS หรือเวลาตอบสนองของทั้งแอป
+
+ตัวเลขจากการวัดก่อนหน้านี้:
+
 | Metric | Week 11 | Week 12 |
 |---|---:|---:|
 | Main Event screen | 27.876 ms | 27.039 ms |

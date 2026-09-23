@@ -22,6 +22,10 @@ Repository: https://github.com/Sojjyuu/khon-kaen-poi-week12
 
 ## Performance result สรุป
 
+Profiler รอบล่าสุดหลังรวมการแก้ Android: input commits 5 ครั้งต่อเวอร์ชันบน iPhone มีค่าเฉลี่ย Week 11 **14.600 ms** และ Week 12 **12.055 ms** ต่อ commit (Week 12 น้อยกว่า 17.4% ในรอบนี้) เป็นเวลา render ของ React; ไฟล์ไม่เก็บตัวอักษรและจำนวนกิจกรรมสำหรับยืนยันเงื่อนไขเท่ากัน
+
+ผลการวัดก่อนรวมการแก้ Android:
+
 - Main Event screen: 27.876 ms → 27.039 ms
 - Input update เฉลี่ย: 13.647 ms → 10.365 ms
 - Input update worst-case: 19.319 ms → 11.696 ms
