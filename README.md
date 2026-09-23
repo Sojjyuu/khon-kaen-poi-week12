@@ -29,6 +29,8 @@ Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architect
 
 รายละเอียดวิธีวัดและข้อจำกัดอยู่ใน [Lab 12 Quality Audit](docs/lab-12-quality-audit.md)
 
+ไฟล์ Profiler ที่ผู้ทดสอบส่งหลังรวมการแก้ Android แสดง commit การเปิดหน้าผ่าน navigation 33.874 ms (Week 11) และ 23.256 ms (Week 12) ในรอบที่บันทึกไว้ การทำงานแต่ละช่วงยังไม่ถูกจับคู่ครบ จึงไม่สรุปว่าแอปโดยรวมเร็วขึ้นจากตัวเลขนี้
+
 ## Accessibility / Device tests
 
 ทดสอบแล้ว:
