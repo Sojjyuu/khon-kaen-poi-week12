@@ -15,7 +15,7 @@ Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architect
 - รองรับ Reduce Motion
 - ทดสอบ VoiceOver/TalkBack flow
 - ทดสอบ Invalid Event ID focus
-- เพิ่ม Web-safe adapters สำหรับ Map, Notification และ Media Library
+- มี Web-safe adapters สำหรับ Map, Notification และ Media Library แต่ยังไม่ได้ตรวจ Web export ในชุดนี้
 - คง Search/Filter, My Trip, Camera, Profile และ Reminder จาก Week 11
 
 ## Performance ที่วัดได้
@@ -43,18 +43,13 @@ Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architect
 ## ติดตั้งและรัน
 
 ```bash
-npm install
+npm ci
 npm test
 npm run typecheck
 npx expo start -c
 ```
 
-ทดสอบ Web:
-
-```bash
-npm run webcheck
-npx expo start --web -c
-```
+Android Expo Go ใช้ Leaflet/OpenStreetMap ผ่าน WebView และต้องเชื่อมต่ออินเทอร์เน็ต ส่วน iPhone ใช้แผนที่ native; ฟิลเตอร์กล้องใช้หลังถ่าย ก่อนบันทึกภาพลงเครื่อง
 
 Invalid Event route:
 
@@ -68,7 +63,7 @@ http://localhost:8081/events/not-found-test
 
 ตั้งแต่ **Expo SDK 53 เป็นต้นไป** Expo Go บน Android ไม่รองรับ **Push Notification / Remote Notification** ที่ส่งมาจากเซิร์ฟเวอร์แล้ว เพราะการทำ push notification ต้องผูกกับ native credentials ของแอปเอง เช่น Firebase Cloud Messaging (FCM) และ configuration ที่ถูกฝังไว้ตั้งแต่ตอน build แอป ดังนั้นการทดสอบ push notification บน Android ต้องใช้ **Development Build / EAS Build** แทน Expo Go
 
-อย่างไรก็ตาม **Local Notification / Scheduled Notification** ที่สร้างจากภายในแอปด้วย `expo-notifications` ยังรองรับใน Expo Go อยู่
+การทำงานของ **Local Notification / Scheduled Notification** ใน Expo Go ขึ้นกับ native modules ในแอป Expo Go รุ่นที่ติดตั้ง หากทดสอบแล้วไม่มีโมดูลที่จำเป็น ให้ใช้ Development Build
 
 สำหรับโปรเจกต์นี้ Reminder ใช้แนวคิด **Local / Scheduled Notification** เป็นหลัก ส่วนถ้าต้องการทดสอบ Push Notification บน Android แบบครบจริง ควรสร้าง Development Build เช่น:
 
@@ -88,7 +83,7 @@ GitHub Actions workflow: **Week 12 Quality Check**
 
 - tests
 - TypeScript
-- Expo Web export
+- Expo configuration
 
 ## เอกสารส่งงาน
 

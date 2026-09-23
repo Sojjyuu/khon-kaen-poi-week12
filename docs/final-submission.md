@@ -18,7 +18,7 @@ Repository: https://github.com/Sojjyuu/khon-kaen-poi-week12
 - [x] Invalid Event ID / accessibility focus
 - [x] ลบกิจกรรมส่วนตัว
 - [x] Web fallback สำหรับ Map / Notification / Media Library
-- [x] Automated tests + TypeScript + Web export check
+- [x] Automated tests + TypeScript + Expo configuration check
 
 ## Performance result สรุป
 
@@ -34,18 +34,14 @@ Repository: https://github.com/Sojjyuu/khon-kaen-poi-week12
 ```bash
 git clone https://github.com/Sojjyuu/khon-kaen-poi-week12.git
 cd khon-kaen-poi-week12
-npm install
+npm ci
 npm test
 npm run typecheck
-npm run webcheck
+npm run check
 npx expo start -c
 ```
 
-ทดสอบเว็บ:
-
-```bash
-npx expo start --web -c
-```
+การทดสอบ Web export ของเวอร์ชันนี้ยังไม่ได้ยืนยัน โปรดทดสอบบนอุปกรณ์ Android/iOS อีกครั้งหลังรวมการแก้ Expo Go
 
 Invalid Event route:
 
@@ -57,5 +53,5 @@ http://localhost:8081/events/not-found-test
 
 - ใช้ branch `main`
 - ใช้รายงาน `docs/lab-12-quality-audit.md` เป็นหลักฐาน Week 12
-- GitHub Actions ชื่อ **Week 12 Quality Check** ตรวจ test + TypeScript + Web export
+- GitHub Actions ชื่อ **Week 12 Quality Check** ตรวจ test + TypeScript + Expo configuration
 - ไม่อัปโหลด secret, API key, `node_modules` หรือ `.expo`

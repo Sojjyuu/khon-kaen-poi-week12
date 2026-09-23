@@ -16,7 +16,7 @@ function compile(path, dependencies) {
   return exports;
 }
 
-function setup({ granted = true } = {}) {
+function setup({ granted = true, expoGo = false } = {}) {
   const calls = [];
   const pending = new Map();
   const event = { id: 'demo', startsAt: new Date(Date.now() + 3_600_000).toISOString() };
@@ -46,6 +46,7 @@ function setup({ granted = true } = {}) {
       AppState: { addEventListener: () => ({ remove() {} }) },
     },
     'expo-notifications': notifications,
+    'expo-constants': { __esModule: true, default: { appOwnership: expoGo ? 'expo' : 'standalone' } },
   });
   const types = compile('src/features/events/types.ts', {});
   const repositoryModule = compile('src/repositories/reminderRepository.ts', {
@@ -62,6 +63,13 @@ test('channel precedes permission; trigger is 30 minutes before event; payload o
   assert.deepEqual(calls, ['channel', 'permission']);
   assert.equal(pending.get(id).trigger.date.getTime(), Date.parse(event.startsAt) - 1_800_000);
   assert.equal(JSON.stringify(pending.get(id).content.data), '{"eventId":"demo"}');
+});
+
+test('Expo Go skips unavailable Android notification channel', async () => {
+  const { repository, pending, calls } = setup({ expoGo: true });
+  const id = await repository.schedule('demo');
+  assert.deepEqual(calls, ['permission']);
+  assert.equal(pending.get(id).trigger.channelId, undefined);
 });
 
 test('denied permission and past events do not schedule', async () => {

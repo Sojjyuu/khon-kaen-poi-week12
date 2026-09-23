@@ -1,7 +1,9 @@
 import { AppState, Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 
 export const REMINDER_CHANNEL = 'event-reminders';
+let channelAvailable = false;
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,12 +27,17 @@ export type NotificationResponseData = {
 
 export const notificationService = {
   async ensurePermission(): Promise<boolean> {
-    if (Platform.OS === 'android') {
-      await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
-        name: 'การเตือนกิจกรรมขอนแก่น',
-        importance: Notifications.AndroidImportance.HIGH,
-        sound: 'default',
-      });
+    if (Platform.OS === 'android' && Constants.appOwnership !== 'expo') {
+      try {
+        await Notifications.setNotificationChannelAsync(REMINDER_CHANNEL, {
+          name: 'การเตือนกิจกรรมขอนแก่น',
+          importance: Notifications.AndroidImportance.HIGH,
+          sound: 'default',
+        });
+        channelAvailable = true;
+      } catch {
+        channelAvailable = false;
+      }
     }
     const current = await Notifications.getPermissionsAsync();
     if (current.granted) return true;
@@ -75,7 +82,7 @@ export const notificationService = {
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: input.date,
-        channelId: REMINDER_CHANNEL,
+        ...(Platform.OS === 'android' && channelAvailable ? { channelId: REMINDER_CHANNEL } : {}),
       },
     });
   },

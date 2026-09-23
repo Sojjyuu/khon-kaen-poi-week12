@@ -206,6 +206,18 @@ export default function CameraScreen() {
           </View>
         ) : null}
 
+        {imageUri ? (
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="บันทึกภาพพร้อมฟิลเตอร์ลงเครื่อง"
+            disabled={isSaving}
+            onPress={savePhoto}
+            style={[styles.saveButton, isSaving && styles.buttonDisabled]}
+          >
+            {isSaving ? <ActivityIndicator color={colors.navy} /> : <Text style={styles.saveText}>บันทึกภาพลง Photos</Text>}
+          </Pressable>
+        ) : null}
+
         <View style={styles.messageCard}>
           <Text style={styles.message}>{message}</Text>
         </View>
@@ -220,14 +232,6 @@ export default function CameraScreen() {
 
           {imageUri ? (
             <>
-              <Pressable
-                accessibilityRole="button"
-                disabled={isSaving}
-                onPress={savePhoto}
-                style={[styles.saveButton, isSaving && styles.buttonDisabled]}
-              >
-                {isSaving ? <ActivityIndicator color={colors.navy} /> : <Text style={styles.saveText}>บันทึกภาพลง Photos</Text>}
-              </Pressable>
               <Pressable accessibilityRole="button" onPress={clearPhoto} style={styles.clearButton}>
                 <Text style={styles.clearText}>ล้างรูป</Text>
               </Pressable>

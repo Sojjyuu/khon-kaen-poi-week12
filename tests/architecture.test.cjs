@@ -28,6 +28,8 @@ test('accessibility fixes include headings, live regions, touch size and reduced
     'app/events/[id].tsx',
     'src/components/EventUI.tsx',
     'src/components/PoiMap.tsx',
+    'src/components/PoiMap.ios.tsx',
+    'src/components/PoiMap.android.tsx',
     'src/screens/PoiExplorerScreen.tsx',
   ].map(read).join('\n');
   assert.match(files, /accessibilityRole="header"/);
