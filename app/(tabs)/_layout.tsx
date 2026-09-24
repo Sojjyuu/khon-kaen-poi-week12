@@ -10,7 +10,7 @@ export default function TabsLayout() {
       headerTintColor: colors.navy,
       tabBarActiveTintColor: colors.navy,
       tabBarInactiveTintColor: colors.textMuted,
-      tabBarStyle: { minHeight: 62, paddingBottom: 6, backgroundColor: colors.surface },
+      tabBarStyle: { backgroundColor: colors.surface },
       tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
     }}>
       <Tabs.Screen name="index" options={{ title: 'แผนที่', tabBarIcon: () => <Text>⌖</Text> }} />

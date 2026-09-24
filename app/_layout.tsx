@@ -39,6 +39,8 @@ function AppRoutes() {
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.navy,
+          headerBackTitle: 'กลับ',
+          headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: colors.background },
         }}
       >

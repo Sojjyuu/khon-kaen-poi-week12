@@ -6,7 +6,7 @@ import { colors } from '../../src/theme/colors';
 
 export default function Home() {
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={styles.safe} edges={['left', 'right']}>
       <View style={styles.menuWrap}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.menu}>
           <Link href="/trip" accessibilityRole="button" style={styles.menuButton}>
@@ -14,15 +14,6 @@ export default function Home() {
           </Link>
           <Link href="/camera" accessibilityRole="button" style={styles.menuButton}>
             <Text style={styles.menuText}>Camera</Text>
-          </Link>
-          <Link href="/events" accessibilityRole="button" style={styles.menuButton}>
-            <Text style={styles.menuText}>Reminder</Text>
-          </Link>
-          <Link href="/profile" accessibilityRole="button" style={styles.menuButton}>
-            <Text style={styles.menuText}>Profile</Text>
-          </Link>
-          <Link href="/favorites" accessibilityRole="button" style={styles.menuButton}>
-            <Text style={styles.menuText}>กิจกรรมที่บันทึก</Text>
           </Link>
         </ScrollView>
       </View>

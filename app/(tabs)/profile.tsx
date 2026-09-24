@@ -14,7 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../src/theme/colors';
 import { useSession } from '../../src/features/auth/session';
 
-const profileImage = require('../../assets/profile-week12.jpg');
+const profileImage = require('../../assets/profile-restored.jpg');
 
 const PROFILE = {
   name: 'Kirati Suwanpusit',
@@ -76,7 +76,7 @@ export default function ProfileScreen() {
         }}
       />
 
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView style={styles.safe} edges={['left', 'right']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ImageBackground source={profileImage} imageStyle={styles.coverImage} style={styles.cover}>
             <View style={styles.coverShade} />

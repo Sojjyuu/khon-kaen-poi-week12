@@ -9,7 +9,7 @@ import { useEvents } from '../../src/features/events/hooks/useEvents';
 export default function Favorites() {
   const { events } = useEvents();
   const { ids, ready, toggle } = useEventFavorites();
-  return <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+  return <SafeAreaView style={{ flex: 1 }} edges={['left', 'right']}>
     <FlatList
       contentContainerStyle={styles.content}
       data={events.filter((event) => ids.includes(event.id))}

@@ -649,12 +649,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   tripActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: 10,
     marginTop: 14,
   },
   tripButton: {
-    flex: 1,
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
@@ -676,7 +674,7 @@ const styles = StyleSheet.create({
   },
   tripLink: {
     minHeight: 48,
-    marginLeft: 9,
+    textAlign: 'center',
     borderRadius: 14,
     backgroundColor: '#EEF2F7',
     paddingHorizontal: 12,

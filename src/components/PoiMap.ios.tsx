@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import MapView, {
   Callout,
   MapMarker,
@@ -127,7 +127,7 @@ const centerFullMap = () => {
         presentationStyle="fullScreen"
         visible={isFullMapVisible}
       >
-        <View style={styles.fullscreen}>
+        <SafeAreaProvider style={styles.fullscreen}>
           <MapView
             accessibilityLabel={`แผนที่เต็มหน้าจอแสดงตำแหน่ง ${poi.name}`}
             ref={fullMapRef}
@@ -193,7 +193,7 @@ const centerFullMap = () => {
               </View>
             </View>
           </SafeAreaView>
-        </View>
+        </SafeAreaProvider>
       </Modal>
     </>
   );
