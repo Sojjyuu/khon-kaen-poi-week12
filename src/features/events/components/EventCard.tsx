@@ -44,6 +44,7 @@ export const EventCard = memo(function EventCard({
         onPress={() => onOpen(event.id)}
       />
       {onToggleFavorite && <Action
+        variant="secondary"
         title={isFavorite ? 'นำกิจกรรมออกจากรายการโปรด' : 'เพิ่มกิจกรรมในรายการโปรด'}
         onPress={() => onToggleFavorite(event.id)}
       />}

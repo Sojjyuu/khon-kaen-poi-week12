@@ -9,7 +9,7 @@ import { colors } from '../theme/colors';
 import { useReduceMotion } from '../features/accessibility/hooks/useReduceMotion';
 import type { PointOfInterest } from '../types/poi';
 
-const dinoLogo = require('../../assets/khon-kaen-dino-icon.png');
+const bannerImage = require('../../assets/dino-banner.jpg');
 const categories = ['ทั้งหมด', ...Array.from(new Set(pointsOfInterest.map((poi) => poi.category)))];
 
 export function PoiExplorerScreen() {
@@ -19,6 +19,7 @@ export function PoiExplorerScreen() {
   const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
   const listRef = useRef<FlatList<PointOfInterest>>(null);
   const reduceMotion = useReduceMotion();
+  const mapOffset = useRef(0);
 
   const filteredPoints = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -43,7 +44,7 @@ export function PoiExplorerScreen() {
   const selectPoi = useCallback((poi: PointOfInterest) => {
     setSelectedPoi(poi);
     setTimeout(() => {
-      listRef.current?.scrollToOffset({ offset: 355, animated: !reduceMotion });
+      listRef.current?.scrollToOffset({ offset: mapOffset.current, animated: !reduceMotion });
     }, 80);
   }, [reduceMotion]);
 
@@ -56,34 +57,12 @@ export function PoiExplorerScreen() {
       ListHeaderComponent={
         <View>
           <View style={styles.hero}>
-            <View style={styles.orbitLarge} />
-            <View style={styles.orbitSmall} />
-            <View style={styles.heroTopRow}>
-              <View style={styles.brandLockup}>
-                <Image accessible={false} source={dinoLogo} style={styles.logo} />
-                <View>
-                  <Text style={styles.brandEyebrow}>KHON KAEN</Text>
-                  <Text style={styles.brandName}>DINO EXPLORER</Text>
-                </View>
-              </View>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeNumber}>10</Text>
-                <Text style={styles.heroBadgeText}>PLACES</Text>
-              </View>
-            </View>
-
-            <Text accessibilityRole="header" style={styles.heroTitle}>ตามรอยเมืองไดโนเสาร์{`\n`}เที่ยวขอนแก่นให้ครบ</Text>
-            <Text style={styles.heroSubtitle}>
-              รวมหมุดแลนด์มาร์กสำคัญ เลือกหนึ่งสถานที่แล้วออกสำรวจบนแผนที่ได้ทันที
-            </Text>
-
-            <View style={styles.heroChips}>
-              <View style={styles.heroChipGold}>
-                <Text style={styles.heroChipGoldText}>🦕 DINOSAUR CITY</Text>
-              </View>
-              <View style={styles.heroChipDark}>
-                <Text style={styles.heroChipDarkText}>📍 10 จุดแนะนำ</Text>
-              </View>
+            <Image source={bannerImage} style={styles.bannerImage}
+              accessibilityLabel="ภาพประกอบไดโนเสาร์ริมบึงและพระธาตุยามเย็น" />
+            <View style={styles.heroCopy}>
+              <Text style={styles.brandEyebrow}>KHON KAEN · DINO EXPLORER</Text>
+              <Text accessibilityRole="header" style={styles.heroTitle}>ออกไปพบขอนแก่นในมุมที่ชอบ</Text>
+              <Text style={styles.heroSubtitle}>10 สถานที่น่าแวะ บันทึกทริป แล้วออกสำรวจไปด้วยกัน</Text>
             </View>
           </View>
 
@@ -146,7 +125,7 @@ export function PoiExplorerScreen() {
           </View>
 
 
-          <View style={styles.mapSectionHeader}>
+          <View style={styles.mapSectionHeader} onLayout={(event) => { mapOffset.current = event.nativeEvent.layout.y; }}>
             <View>
               <Text style={styles.sectionEyebrow}>INTERACTIVE MAP</Text>
               <Text accessibilityRole="header" style={styles.sectionTitle}>แผนที่สำรวจ</Text>
@@ -161,8 +140,6 @@ export function PoiExplorerScreen() {
           <PoiMap poi={selectedPoi} />
 
           <View
-            accessible
-            accessibilityLabel={`สถานที่ที่เลือก ${selectedPoi.name}, ${selectedPoi.category}, ${selectedPoi.address}`}
             style={styles.selectedCard}
           >
             <View style={styles.selectedTopRow}>
@@ -278,128 +255,19 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderRadius: 34,
     backgroundColor: colors.navy,
-    padding: 22,
-    marginTop: 8,
+    padding: 0,
+    marginTop: 4,
     shadowColor: colors.navy,
     shadowOffset: { width: 0, height: 14 },
     shadowOpacity: 0.24,
     shadowRadius: 24,
     elevation: 10,
   },
-  orbitLarge: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    top: -92,
-    right: -54,
-    borderRadius: 105,
-    borderWidth: 34,
-    borderColor: 'rgba(243,185,40,0.10)',
-  },
-  orbitSmall: {
-    position: 'absolute',
-    width: 95,
-    height: 95,
-    bottom: -45,
-    left: 115,
-    borderRadius: 48,
-    backgroundColor: 'rgba(255,107,74,0.12)',
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandLockup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    marginRight: 11,
-  },
-  brandEyebrow: {
-    color: colors.gold,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 2.1,
-  },
-  brandName: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    marginTop: 2,
-  },
-  heroBadge: {
-    width: 54,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  heroBadgeNumber: {
-    color: colors.gold,
-    fontSize: 19,
-    lineHeight: 21,
-    fontWeight: '900',
-  },
-  heroBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 6,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 29,
-    lineHeight: 38,
-    fontWeight: '900',
-    marginTop: 25,
-  },
-  heroSubtitle: {
-    maxWidth: 315,
-    color: '#BFCBE0',
-    fontSize: 12,
-    lineHeight: 19,
-    marginTop: 9,
-  },
-  heroChips: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  heroChipGold: {
-    borderRadius: 999,
-    backgroundColor: colors.gold,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  heroChipGoldText: {
-    color: colors.navy,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-  },
-  heroChipDark: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginLeft: 8,
-  },
-  heroChipDarkText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '800',
-  },
+  bannerImage: { width: '100%', aspectRatio: 2, resizeMode: 'cover' },
+  heroCopy: { padding: 20 },
+  brandEyebrow: { color: colors.gold, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
+  heroTitle: { color: '#FFFFFF', fontSize: 26, lineHeight: 35, fontWeight: '800', marginTop: 10 },
+  heroSubtitle: { color: '#C8D4E6', fontSize: 13, lineHeight: 21, marginTop: 8 },
   mapSectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',

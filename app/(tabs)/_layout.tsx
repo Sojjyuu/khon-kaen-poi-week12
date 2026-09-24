@@ -13,10 +13,10 @@ export default function TabsLayout() {
       tabBarStyle: { backgroundColor: colors.surface },
       tabBarLabelStyle: { fontSize: 12, fontWeight: '700' },
     }}>
-      <Tabs.Screen name="index" options={{ title: 'แผนที่', tabBarIcon: () => <Text>⌖</Text> }} />
-      <Tabs.Screen name="events" options={{ title: 'กิจกรรม', tabBarIcon: () => <Text>▦</Text> }} />
-      <Tabs.Screen name="favorites" options={{ title: 'บันทึก', tabBarIcon: () => <Text>★</Text> }} />
-      <Tabs.Screen name="profile" options={{ title: 'โปรไฟล์', tabBarIcon: () => <Text>◉</Text> }} />
+      <Tabs.Screen name="index" options={{ title: 'แผนที่', tabBarIcon: ({ color, size }) => <Text accessible={false} style={{ color, fontSize: size }}>⌖</Text> }} />
+      <Tabs.Screen name="events" options={{ title: 'กิจกรรม', tabBarIcon: ({ color, size }) => <Text accessible={false} style={{ color, fontSize: size }}>▦</Text> }} />
+      <Tabs.Screen name="favorites" options={{ title: 'บันทึก', tabBarIcon: ({ color, size }) => <Text accessible={false} style={{ color, fontSize: size }}>★</Text> }} />
+      <Tabs.Screen name="profile" options={{ title: 'โปรไฟล์', tabBarIcon: ({ color, size }) => <Text accessible={false} style={{ color, fontSize: size }}>◉</Text> }} />
     </Tabs>
   );
 }
