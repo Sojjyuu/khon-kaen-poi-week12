@@ -17,8 +17,12 @@ import {
 } from '../../src/features/events/types';
 import { formatEventTime } from '../../src/repositories/eventRepository';
 import { focusAccessibilityTarget } from '../../src/features/accessibility/focusAccessibilityTarget';
+import { useSession } from '../../src/features/auth/session';
+import { hasCampusApi } from '../../src/services/campusApi';
+import * as Location from 'expo-location';
 
 export default function EventDetail() {
+  const { session } = useSession();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const eventId = isEventId(id) ? id : null;
   const {
@@ -34,6 +38,7 @@ export default function EventDetail() {
   } = useEventDetail(eventId);
 
   const [busy, setBusy] = useState(false);
+  const [coordinates, setCoordinates] = useState('');
   const busyRef = useRef(false);
   const statusRef = useRef<View>(null);
 
@@ -175,6 +180,27 @@ export default function EventDetail() {
               <Text style={styles.text}>⌖ {poi?.name}</Text>
               <Text style={styles.text}>{poi?.address}</Text>
               <Text style={styles.text}>{event.description}</Text>
+            </View>
+            {hasCampusApi() && <View style={styles.card}>
+              <Text accessibilityRole="header" style={styles.subtitle}>เข้าร่วมกิจกรรม</Text>
+              <Action title={session.status === 'authenticated' ? 'ลงทะเบียนกิจกรรม' : 'เข้าสู่ระบบเพื่อลงทะเบียน'}
+                disabled={session.status === 'loading'}
+                onPress={() => session.status === 'authenticated'
+                  ? router.push({ pathname: '/register', params: { id: event.id } })
+                  : router.push('/login')} />
+            </View>}
+            <View style={styles.card}>
+              <Text accessibilityRole="header" style={styles.subtitle}>ตำแหน่งปัจจุบัน</Text>
+              <Text style={styles.text}>ดูสถานที่จัดกิจกรรมได้โดยไม่ต้องอนุญาตตำแหน่ง</Text>
+              <Action title="ใช้ตำแหน่งปัจจุบัน" onPress={() => { void (async () => {
+                const permission = await Location.requestForegroundPermissionsAsync();
+                if (!permission.granted) { setCoordinates('ไม่ได้รับสิทธิ์ตำแหน่ง'); return; }
+                try {
+                  const result = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+                  setCoordinates(`${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)}`);
+                } catch { setCoordinates('อ่านตำแหน่งไม่ได้ กรุณาลองอีกครั้ง'); }
+              })(); }} />
+              {!!coordinates && <Text accessibilityLiveRegion="polite" style={styles.text}>{coordinates}</Text>}
             </View>
 
             <View style={styles.card}>

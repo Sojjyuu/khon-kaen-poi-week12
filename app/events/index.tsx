@@ -10,7 +10,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import { router } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Action, eventStyles as styles } from '../../src/components/EventUI';
@@ -19,22 +19,29 @@ import { useEvents } from '../../src/features/events/hooks/useEvents';
 import type { CampusEvent } from '../../src/features/events/types';
 import { formatEventTime } from '../../src/repositories/eventRepository';
 import { logRender } from '../../src/services/performanceLogger';
+import { useEventFavorites } from '../../src/features/events/FavoritesProvider';
+import { pointsOfInterest } from '../../src/data/pointsOfInterest';
 
 function EventSeparator() {
   return <View style={{ height: 16 }} />;
 }
 
 export default function Events() {
+  const { poiId } = useLocalSearchParams<{ poiId?: string | string[] }>();
+  const initialPoi = typeof poiId === 'string' && pointsOfInterest.some((poi) => poi.id === poiId) ? poiId : pointsOfInterest[0].id;
   const {
     events,
     loading,
     error,
+    offline,
+    updatedAt,
     reload,
     createEvent,
     removeEvent,
   } = useEvents();
 
   const [title, setTitle] = useState('');
+  const [selectedPoiId, setSelectedPoiId] = useState(initialPoi);
   const [startsAt, setStartsAt] = useState(() => {
     const date = new Date(Date.now() + 3_600_000);
     date.setSeconds(0, 0);
@@ -43,6 +50,10 @@ export default function Events() {
   const [picker, setPicker] = useState<'date' | 'time' | null>(null);
   const [busy, setBusy] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const { ids: favoriteIds, toggle } = useEventFavorites();
+  const toggleFavorite = useCallback((id: string) => {
+    void toggle(id).catch(() => Alert.alert('บันทึกรายการโปรดไม่ได้'));
+  }, [toggle]);
   const saving = useRef(false);
 
   const openEvent = useCallback((id: string) => {
@@ -54,7 +65,7 @@ export default function Events() {
     saving.current = true;
     setBusy(true);
     try {
-      const event = await createEvent(title, startsAt);
+      const event = await createEvent(title, startsAt, selectedPoiId);
       Keyboard.dismiss();
       setTitle('');
       openEvent(event.id);
@@ -67,7 +78,7 @@ export default function Events() {
       saving.current = false;
       setBusy(false);
     }
-  }, [createEvent, openEvent, startsAt, title]);
+  }, [createEvent, openEvent, selectedPoiId, startsAt, title]);
 
   const confirmDelete = useCallback(
     (event: CampusEvent) => {
@@ -108,9 +119,11 @@ export default function Events() {
         event={item}
         onDelete={confirmDelete}
         onOpen={openEvent}
+        isFavorite={favoriteIds.includes(item.id)}
+        onToggleFavorite={toggleFavorite}
       />
     ),
-    [confirmDelete, deletingId, openEvent],
+    [confirmDelete, deletingId, favoriteIds, openEvent, toggleFavorite],
   );
 
   return (
@@ -124,6 +137,8 @@ export default function Events() {
           <FlatList
             contentContainerStyle={styles.content}
             data={events}
+            refreshing={loading && events.length > 0}
+            onRefresh={() => void reload()}
             initialNumToRender={6}
             keyExtractor={(item) => item.id}
             keyboardDismissMode="on-drag"
@@ -154,6 +169,10 @@ export default function Events() {
                     กำลังโหลดกิจกรรม…
                   </Text>
                 )}
+                {offline && <Text accessibilityRole="alert" style={styles.error}>
+                  ออฟไลน์: แสดงข้อมูลที่บันทึกไว้ล่าสุด {updatedAt ? new Date(updatedAt).toLocaleString('th-TH') : ''}
+                </Text>}
+                <Action title="ดูกิจกรรมที่บันทึก" onPress={() => router.push('/favorites')} />
 
                 {!!error && (
                   <View
@@ -169,7 +188,11 @@ export default function Events() {
                   <Text accessibilityRole="header" style={styles.subtitle}>
                     สร้างกิจกรรมของคุณ
                   </Text>
-                  <Text style={styles.text}>สถานที่: มหาวิทยาลัยขอนแก่น</Text>
+                  <Text style={styles.text}>สถานที่: {pointsOfInterest.find((poi) => poi.id === selectedPoiId)?.name}</Text>
+                  <FlatList horizontal data={pointsOfInterest} keyExtractor={(poi) => poi.id}
+                    renderItem={({ item }) => <View style={{ marginRight: 8 }}><Action
+                      title={selectedPoiId === item.id ? `✓ ${item.name}` : item.name}
+                      onPress={() => setSelectedPoiId(item.id)} /></View>} />
 
                   <Text nativeID="event-title-label" style={styles.text}>
                     ชื่อกิจกรรม

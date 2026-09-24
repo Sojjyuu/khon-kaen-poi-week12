@@ -5,8 +5,15 @@ import { StatusBar } from 'expo-status-bar';
 
 import { reminderRepository } from '../src/repositories/reminderRepository';
 import { colors } from '../src/theme/colors';
+import { SessionProvider, useSession } from '../src/features/auth/session';
+import { FavoritesProvider } from '../src/features/events/FavoritesProvider';
 
 export default function RootLayout() {
+  return <SessionProvider><FavoritesProvider><AppRoutes /></FavoritesProvider></SessionProvider>;
+}
+
+function AppRoutes() {
+  const { session } = useSession();
   const state = useRootNavigationState();
   const handled = useRef(new Set<string>());
 
@@ -41,6 +48,13 @@ export default function RootLayout() {
         <Stack.Screen name="trip" options={{ title: 'My Trip' }} />
         <Stack.Screen name="camera" options={{ title: 'Camera' }} />
         <Stack.Screen name="profile" options={{ title: 'Profile' }} />
+        <Stack.Screen name="favorites" options={{ title: 'กิจกรรมที่บันทึก' }} />
+        <Stack.Protected guard={session.status === 'anonymous'}>
+          <Stack.Screen name="login" options={{ title: 'เข้าสู่ระบบ' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={session.status === 'authenticated'}>
+          <Stack.Screen name="register" options={{ title: 'ลงทะเบียนกิจกรรม' }} />
+        </Stack.Protected>
       </Stack>
     </SafeAreaProvider>
   );

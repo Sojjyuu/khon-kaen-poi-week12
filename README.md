@@ -1,5 +1,9 @@
 # Khon Kaen Dino Explorer — Week 13
 
+## งานต่อยอดเกณฑ์สัปดาห์ 1–10
+
+เพิ่ม Event Favorites, remote event API พร้อม offline cache, Login/Registration ผ่าน API จำลอง, SecureStore session และตำแหน่งปัจจุบัน ดู [สถานะสิ่งที่เติมและสิ่งที่ยังขาด](docs/course-gaps-progress.md) ก่อนส่งงาน เวอร์ชันนี้อยู่บนสาขาแยกจาก Week 13 เดิม
+
 Week 13 เพิ่ม automated tests และ quality gates บนงาน Week 12 เดิม โดยมี [รายงานผลและ bug report](docs/week13-test-report.md) และ [Maestro smoke flow](.maestro/smoke.yaml) สำหรับ Preview Build ของแอปนี้
 
 ```bash

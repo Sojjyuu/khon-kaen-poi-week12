@@ -29,6 +29,8 @@ function setup(store = new Map()) {
     '../data/pointsOfInterest': { pointsOfInterest: [{ id: 'kku', name: 'KKU' }] },
     '../features/events/types': types,
     '../storage/eventStorage': { eventStorage: storage },
+    '../features/events/remoteEvents': { cachedRemoteEvents: async () => null },
+    '../services/campusApi': { hasCampusApi: () => false },
   });
   return { repository: module.createEventRepository(storage), store };
 }

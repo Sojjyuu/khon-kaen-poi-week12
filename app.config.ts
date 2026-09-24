@@ -23,6 +23,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       ...(config.plugins ?? []),
       'expo-router',
       'expo-notifications',
+      ['expo-location', { locationWhenInUsePermission: 'ใช้ตำแหน่งเพื่อแสดงพิกัดปัจจุบันขณะดูกิจกรรม' }],
       [
         'expo-image-picker',
         {

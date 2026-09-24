@@ -21,6 +21,9 @@ export default function Home() {
           <Link href="/profile" accessibilityRole="button" style={styles.menuButton}>
             <Text style={styles.menuText}>Profile</Text>
           </Link>
+          <Link href="/favorites" accessibilityRole="button" style={styles.menuButton}>
+            <Text style={styles.menuText}>กิจกรรมที่บันทึก</Text>
+          </Link>
         </ScrollView>
       </View>
       <PoiExplorerScreen />

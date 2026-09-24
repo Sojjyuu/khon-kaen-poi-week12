@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../src/theme/colors';
+import { useSession } from '../src/features/auth/session';
 
 const profileImage = require('../assets/profile-week12.jpg');
 
@@ -65,6 +66,7 @@ function ContactButton({ label, value, url, filled = false }: ContactButtonProps
 }
 
 export default function ProfileScreen() {
+  const { session, logout } = useSession();
   return (
     <>
       <Stack.Screen
@@ -152,6 +154,9 @@ export default function ProfileScreen() {
               </Text>
             </View>
           </View>
+          {session.status === 'authenticated' && <Pressable accessibilityRole="button" accessibilityLabel="ออกจากระบบ" onPress={() => void logout()} style={styles.contactButton}>
+            <Text style={styles.contactLabel}>ออกจากระบบ ({session.user.name})</Text>
+          </Pressable>}
         </ScrollView>
       </SafeAreaView>
     </>

@@ -5,6 +5,8 @@ import {
   type CampusEvent,
 } from '../features/events/types';
 import { eventStorage, type EventStorage } from '../storage/eventStorage';
+import { cachedRemoteEvents } from '../features/events/remoteEvents';
+import { fetchCampusEvent, hasCampusApi } from '../services/campusApi';
 
 function isCampusEvent(value: unknown): value is CampusEvent {
   if (!value || typeof value !== 'object') return false;
@@ -56,23 +58,31 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
 
     async findById(id: unknown): Promise<CampusEvent | undefined> {
       if (!isEventId(id)) return undefined;
-      return (await load()).find((event) => event.id === id);
+      const local = (await load()).find((event) => event.id === id);
+      if (local) return local;
+      if (hasCampusApi()) {
+        try { return await fetchCampusEvent(id); } catch {
+          return (await cachedRemoteEvents())?.events.find((event) => event.id === id);
+        }
+      }
+      return undefined;
     },
 
-    async create(title: string, startsAt: Date): Promise<CampusEvent> {
+    async create(title: string, startsAt: Date, poiId = pointsOfInterest[0].id): Promise<CampusEvent> {
       if (!title.trim() || title.trim().length > 100) {
         throw new Error('กรอกชื่อกิจกรรม 1–100 ตัวอักษร');
       }
       if (!Number.isFinite(startsAt.getTime()) || startsAt.getTime() <= Date.now()) {
         throw new Error('กรุณาเลือกวันและเวลาเริ่มกิจกรรมในอนาคต');
       }
+      if (!pointsOfInterest.some((poi) => poi.id === poiId)) throw new Error('สถานที่ไม่ถูกต้อง');
 
       const events = await load();
       const event: CampusEvent = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: title.trim(),
         startsAt: startsAt.toISOString(),
-        poiId: pointsOfInterest[0].id,
+        poiId,
         description: 'กิจกรรมส่วนตัวที่สร้างบนเครื่องนี้',
       };
       const next = [...events, event];

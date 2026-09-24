@@ -2,7 +2,7 @@ name: Week 13 Quality Check
 
 on:
   push:
-    branches: [week13-testing-debugging]
+    branches: [week13-testing-debugging, course-gaps-integration]
   pull_request:
     branches: [main]
 

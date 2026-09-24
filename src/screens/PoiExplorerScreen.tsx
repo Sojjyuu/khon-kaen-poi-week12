@@ -189,6 +189,9 @@ export function PoiExplorerScreen() {
             </View>
 
             <View style={styles.tripActions}>
+              <Link href={{ pathname: '/events', params: { poiId: selectedPoi.id } }} accessibilityRole="button" style={styles.tripLink}>
+                <Text style={styles.tripLinkText}>สร้างกิจกรรมที่นี่ →</Text>
+              </Link>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={favoriteIds.includes(selectedPoi.id) ? 'นำสถานที่ออกจากทริป' : 'เพิ่มสถานที่เข้าทริป'}
