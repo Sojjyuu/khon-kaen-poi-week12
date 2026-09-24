@@ -126,7 +126,7 @@ export default function ProfileScreen() {
           <View style={styles.contactCard}>
             <View style={styles.contactHeaderRow}>
               <View>
-                <Text style={styles.contactEyebrow}>LET'S CONNECT</Text>
+                <Text style={styles.contactEyebrow}>LET&apos;S CONNECT</Text>
                 <Text style={styles.contactTitle}>ช่องทางติดต่อ</Text>
               </View>
               <View style={styles.onlinePill}>

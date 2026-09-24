@@ -1,4 +1,18 @@
-# Khon Kaen Dino Explorer — Week 12
+# Khon Kaen Dino Explorer — Week 13
+
+Week 13 เพิ่ม automated tests และ quality gates บนงาน Week 12 เดิม โดยมี [รายงานผลและ bug report](docs/week13-test-report.md) และ [Maestro smoke flow](.maestro/smoke.yaml) สำหรับ Preview Build ของแอปนี้
+
+```bash
+npm ci
+npm run typecheck
+npm run lint
+npm test
+CI=1 npx expo-doctor@1.20.4
+```
+
+Preview Build ยังต้องสร้างจาก Expo account ที่ล็อกอินและติดตั้งทดสอบบนเครื่องจริง ดูขั้นตอนและสถานะที่รายงาน Week 13
+
+## งานพื้นฐานจาก Week 12
 
 Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architecture, Performance และ Accessibility** โดยไม่เพิ่ม scope ฟีเจอร์ที่ไม่จำเป็น
 

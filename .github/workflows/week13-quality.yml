@@ -1,0 +1,23 @@
+name: Week 13 Quality Check
+
+on:
+  push:
+    branches: [week13-testing-debugging]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - run: CI=1 npx --yes expo-doctor@1.20.4

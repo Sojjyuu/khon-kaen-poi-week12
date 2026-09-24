@@ -1,0 +1,8 @@
+appId: com.sojjyu.khonkaenpoi
+---
+- launchApp
+- assertVisible: "My Trip"
+- tapOn: "Reminder"
+- assertVisible: "กิจกรรมขอนแก่น"
+- tapOn: "ดูรายละเอียดและตั้งเตือน"
+- assertVisible: "รายละเอียดกิจกรรม"

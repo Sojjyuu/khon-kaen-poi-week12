@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toggleFavoriteIds } from '../features/favorites/toggleFavoriteIds';
 
 const FAVORITES_KEY = '@khon-kaen-poi/favorites';
 
@@ -18,9 +19,15 @@ export async function setFavoritePoiIds(ids: string[]) {
   await AsyncStorage.setItem(FAVORITES_KEY, JSON.stringify(Array.from(new Set(ids))));
 }
 
-export async function toggleFavoritePoi(id: string): Promise<string[]> {
-  const current = await getFavoritePoiIds();
-  const next = current.includes(id) ? current.filter((item) => item !== id) : [...current, id];
-  await setFavoritePoiIds(next);
-  return next;
+let pendingToggle: Promise<unknown> = Promise.resolve();
+
+export function toggleFavoritePoi(id: string): Promise<string[]> {
+  // Read and write are one operation; parallel taps must not overwrite each other.
+  const result = pendingToggle.then(async () => {
+    const next = toggleFavoriteIds(await getFavoritePoiIds(), id);
+    await setFavoritePoiIds(next);
+    return next;
+  });
+  pendingToggle = result.catch(() => undefined);
+  return result;
 }

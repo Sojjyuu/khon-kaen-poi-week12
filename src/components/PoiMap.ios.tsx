@@ -58,7 +58,7 @@ export function PoiMap({ poi }: PoiMapProps) {
     650
   );
   return () => clearTimeout(timer);
-}, [poi.id, poi.latitude, poi.longitude, reduceMotion]);
+}, [poi, reduceMotion]);
 
 const centerFullMap = () => {
   if (reduceMotion) {
@@ -399,4 +399,3 @@ const styles = StyleSheet.create({
     transform: [{ scale: 0.97 }],
   },
 });
-

@@ -60,7 +60,7 @@ export function PoiMap({ poi }: PoiMapProps) {
 
     const timer = setTimeout(() => markerRef.current?.showCallout(), 650);
     return () => clearTimeout(timer);
-  }, [poi.id, poi.latitude, poi.longitude]);
+  }, [poi]);
 
   const centerFullMap = () => {
     if (Platform.OS === 'android') fullWebMapRef.current?.injectJavaScript('window.centerOnPoi && window.centerOnPoi(); true;');
