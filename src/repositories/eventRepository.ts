@@ -7,6 +7,7 @@ import {
 import { eventStorage, type EventStorage } from '../storage/eventStorage';
 import { cachedRemoteEvents } from '../features/events/remoteEvents';
 import { fetchCampusEvent, hasCampusApi } from '../services/campusApi';
+import { isCoordinates, type Coordinates } from '../types/coordinates';
 
 function isCampusEvent(value: unknown): value is CampusEvent {
   if (!value || typeof value !== 'object') return false;
@@ -18,6 +19,7 @@ function isCampusEvent(value: unknown): value is CampusEvent {
     typeof event.startsAt === 'string' &&
     Number.isFinite(Date.parse(event.startsAt)) &&
     pointsOfInterest.some((poi) => poi.id === event.poiId)
+    && (event.venue === undefined || isCoordinates(event.venue))
   );
 }
 
@@ -68,7 +70,7 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
       return undefined;
     },
 
-    async create(title: string, startsAt: Date, poiId = pointsOfInterest[0].id): Promise<CampusEvent> {
+    async create(title: string, startsAt: Date, poiId = pointsOfInterest[0].id, venue?: Coordinates): Promise<CampusEvent> {
       if (!title.trim() || title.trim().length > 100) {
         throw new Error('กรอกชื่อกิจกรรม 1–100 ตัวอักษร');
       }
@@ -76,6 +78,7 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
         throw new Error('กรุณาเลือกวันและเวลาเริ่มกิจกรรมในอนาคต');
       }
       if (!pointsOfInterest.some((poi) => poi.id === poiId)) throw new Error('สถานที่ไม่ถูกต้อง');
+      if (venue !== undefined && !isCoordinates(venue)) throw new Error('พิกัดสถานที่ไม่ถูกต้อง');
 
       const events = await load();
       const event: CampusEvent = {
@@ -83,6 +86,7 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
         title: title.trim(),
         startsAt: startsAt.toISOString(),
         poiId,
+        ...(venue ? { venue } : {}),
         description: 'กิจกรรมส่วนตัวที่สร้างบนเครื่องนี้',
       };
       const next = [...events, event];

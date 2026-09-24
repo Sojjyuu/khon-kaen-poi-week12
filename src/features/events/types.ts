@@ -1,9 +1,12 @@
+import type { Coordinates } from '../../types/coordinates';
+
 export type CampusEvent = {
   id: string;
   title: string;
   startsAt: string;
   poiId: string;
   description: string;
+  venue?: Coordinates;
 };
 
 export function isEventId(value: unknown): value is string {

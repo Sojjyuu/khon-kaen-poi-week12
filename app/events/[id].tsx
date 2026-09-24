@@ -9,6 +9,8 @@ import { router, useLocalSearchParams } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { Action, eventStyles as styles } from '../../src/components/EventUI';
+import { PoiMap } from '../../src/components/PoiMap';
+import { VenuePicker } from '../../src/components/VenuePicker';
 import { pointsOfInterest } from '../../src/data/pointsOfInterest';
 import { useEventDetail } from '../../src/features/events/hooks/useEventDetail';
 import {
@@ -181,6 +183,7 @@ export default function EventDetail() {
               <Text style={styles.text}>{poi?.address}</Text>
               <Text style={styles.text}>{event.description}</Text>
             </View>
+            {event.venue ? <VenuePicker initial={event.venue} selected={event.venue} /> : poi && <PoiMap poi={poi} />}
             {hasCampusApi() && <View style={styles.card}>
               <Text accessibilityRole="header" style={styles.subtitle}>เข้าร่วมกิจกรรม</Text>
               <Action title={session.status === 'authenticated' ? 'ลงทะเบียนกิจกรรม' : 'เข้าสู่ระบบเพื่อลงทะเบียน'}
@@ -193,9 +196,9 @@ export default function EventDetail() {
               <Text accessibilityRole="header" style={styles.subtitle}>ตำแหน่งปัจจุบัน</Text>
               <Text style={styles.text}>ดูสถานที่จัดกิจกรรมได้โดยไม่ต้องอนุญาตตำแหน่ง</Text>
               <Action title="ใช้ตำแหน่งปัจจุบัน" onPress={() => { void (async () => {
-                const permission = await Location.requestForegroundPermissionsAsync();
-                if (!permission.granted) { setCoordinates('ไม่ได้รับสิทธิ์ตำแหน่ง'); return; }
                 try {
+                  const permission = await Location.requestForegroundPermissionsAsync();
+                  if (!permission.granted) { setCoordinates('ไม่ได้รับสิทธิ์ตำแหน่ง'); return; }
                   const result = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
                   setCoordinates(`${result.coords.latitude.toFixed(5)}, ${result.coords.longitude.toFixed(5)}`);
                 } catch { setCoordinates('อ่านตำแหน่งไม่ได้ กรุณาลองอีกครั้ง'); }

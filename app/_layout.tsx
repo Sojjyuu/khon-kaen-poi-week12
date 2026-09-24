@@ -42,13 +42,10 @@ function AppRoutes() {
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="events/index" options={{ title: 'กิจกรรมขอนแก่น' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="events/[id]" options={{ title: 'รายละเอียดกิจกรรม' }} />
         <Stack.Screen name="trip" options={{ title: 'My Trip' }} />
         <Stack.Screen name="camera" options={{ title: 'Camera' }} />
-        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
-        <Stack.Screen name="favorites" options={{ title: 'กิจกรรมที่บันทึก' }} />
         <Stack.Protected guard={session.status === 'anonymous'}>
           <Stack.Screen name="login" options={{ title: 'เข้าสู่ระบบ' }} />
         </Stack.Protected>

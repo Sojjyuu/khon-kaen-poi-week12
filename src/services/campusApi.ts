@@ -1,9 +1,12 @@
 import type { CampusEvent } from '../features/events/types';
+import { isCoordinates } from '../types/coordinates';
 
-const baseUrl = process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+function apiUrl() {
+  return process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+}
 
 export function hasCampusApi() {
-  return Boolean(baseUrl);
+  return Boolean(apiUrl());
 }
 
 export class ApiError extends Error {
@@ -13,12 +16,13 @@ export class ApiError extends Error {
 }
 
 export async function requestJson(path: string, options: RequestInit = {}, token?: string): Promise<unknown> {
+  const baseUrl = apiUrl();
   if (!baseUrl) throw new Error('ยังไม่ได้ตั้งค่า EXPO_PUBLIC_API_URL');
   const response = await fetch(`${baseUrl}${path}`, {
     ...options,
     headers: {
       Accept: 'application/json',
-      ...(options.body ? { 'Content-Type': 'application/json' } : {}),
+      ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
       ...options.headers,
     },
@@ -40,7 +44,7 @@ export function isCampusEvent(value: unknown): value is CampusEvent {
   return typeof event.id === 'string' && /^[\w-]{1,80}$/.test(event.id) &&
     typeof event.title === 'string' && typeof event.description === 'string' &&
     typeof event.startsAt === 'string' && Number.isFinite(Date.parse(event.startsAt)) &&
-    typeof event.poiId === 'string';
+    typeof event.poiId === 'string' && (event.venue === undefined || isCoordinates(event.venue));
 }
 
 export async function fetchCampusEvents(signal?: AbortSignal): Promise<CampusEvent[]> {

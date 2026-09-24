@@ -1,10 +1,10 @@
 import { FlatList, Text } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Action, eventStyles as styles } from '../src/components/EventUI';
-import { EventCard } from '../src/features/events/components/EventCard';
-import { useEventFavorites } from '../src/features/events/FavoritesProvider';
-import { useEvents } from '../src/features/events/hooks/useEvents';
+import { Action, eventStyles as styles } from '../../src/components/EventUI';
+import { EventCard } from '../../src/features/events/components/EventCard';
+import { useEventFavorites } from '../../src/features/events/FavoritesProvider';
+import { useEvents } from '../../src/features/events/hooks/useEvents';
 
 export default function Favorites() {
   const { events } = useEvents();

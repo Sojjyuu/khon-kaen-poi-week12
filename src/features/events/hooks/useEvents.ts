@@ -6,6 +6,7 @@ import { reminderRepository } from '../../../repositories/reminderRepository';
 import type { CampusEvent } from '../types';
 import { cachedRemoteEvents, refreshRemoteEvents } from '../remoteEvents';
 import { hasCampusApi } from '../../../services/campusApi';
+import type { Coordinates } from '../../../types/coordinates';
 
 export function useEvents() {
   const [events, setEvents] = useState<CampusEvent[]>([]);
@@ -60,8 +61,8 @@ export function useEvents() {
     }, [reload]),
   );
 
-  const createEvent = useCallback(async (title: string, startsAt: Date, poiId?: string) => {
-    const event = await eventRepository.create(title, startsAt, poiId);
+  const createEvent = useCallback(async (title: string, startsAt: Date, poiId?: string, venue?: Coordinates) => {
+    const event = await eventRepository.create(title, startsAt, poiId, venue);
     setEvents((current) => [...current, event]);
     return event;
   }, []);

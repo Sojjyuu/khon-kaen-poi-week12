@@ -21,6 +21,16 @@ const equal = (a, b) => {
   const first = Buffer.from(String(a)); const second = Buffer.from(String(b));
   return first.length === second.length && timingSafeEqual(first, second);
 };
+async function readBody(req, maxBytes) {
+  const chunks = [];
+  let length = 0;
+  for await (const chunk of req) {
+    length += chunk.length;
+    if (length > maxBytes) return null;
+    chunks.push(chunk);
+  }
+  return Buffer.concat(chunks);
+}
 
 const server = http.createServer(async (req, res) => {
   try {
@@ -31,14 +41,33 @@ const server = http.createServer(async (req, res) => {
       const event = events.find((item) => item.id === eventId);
       return json(res, event ? 200 : 404, event || { error: 'not-found' });
     }
+    const photoRoute = path.match(/^\/events\/([\w-]+)\/registrations\/([\w-]+)\/photo$/);
+    if (req.method === 'POST' && photoRoute) {
+      if (req.headers.authorization !== `Bearer ${token}`) return json(res, 401, { error: 'unauthorized' });
+      if (registrations.get(`${user.id}/${photoRoute[1]}`) !== photoRoute[2]) return json(res, 404, { error: 'not-found' });
+      const boundary = /^multipart\/form-data; boundary=(?:"([\w-]{1,70})"|([\w-]{1,70}))/.exec(req.headers['content-type'] || '');
+      if (!boundary) return json(res, 415, { error: 'invalid-content-type' });
+      const payload = await readBody(req, 3_100_000);
+      if (!payload) return json(res, 413, { error: 'too-large' });
+      const headerEnd = payload.indexOf('\r\n\r\n');
+      const finalBoundary = payload.indexOf(`\r\n--${boundary[1] || boundary[2]}`, headerEnd + 4);
+      if (headerEnd < 0 || finalBoundary < 0) return json(res, 400, { error: 'invalid-multipart' });
+      const header = payload.subarray(0, headerEnd).toString('utf8');
+      const bytes = payload.subarray(headerEnd + 4, finalBoundary);
+      const declared = /Content-Type: (image\/jpeg|image\/png)/i.exec(header)?.[1]?.toLowerCase();
+      const jpeg = bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff;
+      const png = bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'));
+      if (!/name="photo"/.test(header) || bytes.length === 0 || bytes.length > 3_000_000 ||
+          !((declared === 'image/jpeg' && jpeg) || (declared === 'image/png' && png))) {
+        return json(res, 400, { error: 'invalid-photo' });
+      }
+      return json(res, 200, { photoId: `photo-${randomBytes(6).toString('hex')}` });
+    }
     let body = {};
     if (req.method === 'POST') {
-      let raw = '';
-      for await (const chunk of req) {
-        raw += chunk;
-        if (raw.length > 8_192) return json(res, 413, { error: 'too-large' });
-      }
-      try { body = JSON.parse(raw); } catch { return json(res, 400, { error: 'invalid-json' }); }
+      const raw = await readBody(req, 8_192);
+      if (!raw) return json(res, 413, { error: 'too-large' });
+      try { body = JSON.parse(raw.toString('utf8')); } catch { return json(res, 400, { error: 'invalid-json' }); }
     }
     if (req.method === 'POST' && path === '/auth/login') {
       return equal(body.email, email) && equal(body.password, password)
@@ -57,4 +86,8 @@ const server = http.createServer(async (req, res) => {
     return json(res, 404, { error: 'not-found' });
   } catch { return json(res, 500, { error: 'internal' }); }
 });
-server.listen(port, '0.0.0.0', () => console.log(`Test API listening on port ${port}. Use only on a trusted development network.`));
+server.listen(port, '0.0.0.0', () => {
+  const address = server.address();
+  console.log(`Test API listening on port ${address.port}. Use only on a trusted development network.`);
+  if (process.send) process.send({ port: address.port });
+});
