@@ -1,3 +1,4 @@
+import { CoverPhoto } from '../../../components/CoverPhoto';
 import { memo } from 'react';
 import { Text, View } from 'react-native';
 
@@ -28,6 +29,7 @@ export const EventCard = memo(function EventCard({
 
   return (
     <View style={styles.card}>
+      <CoverPhoto poiId={event.poiId} title={place ?? event.title} />
       {canDelete && (
         <Text accessibilityLabel="กิจกรรมของคุณ ลบได้" style={styles.badgeText}>
           ★ กิจกรรมของคุณ • ลบได้

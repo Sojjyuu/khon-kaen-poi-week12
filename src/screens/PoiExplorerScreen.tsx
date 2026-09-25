@@ -1,7 +1,8 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Link, useFocusEffect } from 'expo-router';
-import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Link, router, useFocusEffect } from 'expo-router';
+import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CoverPhoto } from '../components/CoverPhoto';
 import { PoiMap } from '../components/PoiMap';
 import { pointsOfInterest } from '../data/pointsOfInterest';
 import { getFavoritePoiIds, toggleFavoritePoi } from '../services/favorites';
@@ -9,7 +10,7 @@ import { colors } from '../theme/colors';
 import { useReduceMotion } from '../features/accessibility/hooks/useReduceMotion';
 import type { PointOfInterest } from '../types/poi';
 
-const bannerImage = require('../../assets/dino-banner.jpg');
+
 const categories = ['ทั้งหมด', ...Array.from(new Set(pointsOfInterest.map((poi) => poi.category)))];
 
 export function PoiExplorerScreen() {
@@ -50,20 +51,20 @@ export function PoiExplorerScreen() {
 
   return (
     <FlatList
+      style={{ flex: 1 }}
       ref={listRef}
       contentContainerStyle={styles.content}
       data={filteredPoints}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
-          <View style={styles.hero}>
-            <Image source={bannerImage} style={styles.bannerImage}
-              accessibilityLabel="ภาพประกอบไดโนเสาร์ริมบึงและพระธาตุยามเย็น" />
-            <View style={styles.heroCopy}>
-              <Text style={styles.brandEyebrow}>KHON KAEN · DINO EXPLORER</Text>
-              <Text accessibilityRole="header" style={styles.heroTitle}>ออกไปพบขอนแก่นในมุมที่ชอบ</Text>
-              <Text style={styles.heroSubtitle}>10 สถานที่น่าแวะ บันทึกทริป แล้วออกสำรวจไปด้วยกัน</Text>
-            </View>
+          <View style={styles.shortcuts}>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/trip')} style={styles.shortcut}>
+              <Text style={styles.shortcutText}>ทริปของฉัน →</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/camera')} style={[styles.shortcut, { backgroundColor: '#E8EEF5' }]}>
+              <Text style={styles.shortcutText}>บันทึกภาพ →</Text>
+            </Pressable>
           </View>
 
           <View style={styles.searchSection}>
@@ -142,6 +143,7 @@ export function PoiExplorerScreen() {
           <View
             style={styles.selectedCard}
           >
+            <CoverPhoto poiId={selectedPoi.id} title={selectedPoi.name} height={180} />
             <View style={styles.selectedTopRow}>
               <View style={styles.selectedIcon}>
                 <Text style={styles.selectedIconText}>{selectedPoi.icon}</Text>
@@ -211,13 +213,12 @@ export function PoiExplorerScreen() {
               pressed && styles.pressed,
             ]}
           >
+            <CoverPhoto poiId={item.id} title={item.name} height={156} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={[styles.index, selected && styles.indexSelected]}>
               <Text style={[styles.indexText, selected && styles.indexTextSelected]}>
                 {String(index + 1).padStart(2, '0')}
               </Text>
-            </View>
-            <View style={[styles.poiIcon, selected && styles.poiIconSelected]}>
-              <Text style={styles.poiIconText}>{item.icon}</Text>
             </View>
             <View style={styles.poiCopy}>
               <Text style={[styles.poiName, selected && styles.poiNameSelected]}>
@@ -232,6 +233,7 @@ export function PoiExplorerScreen() {
                 {selected ? '✓' : '›'}
               </Text>
             </View>
+            </View>
           </Pressable>
         );
       }}
@@ -241,6 +243,7 @@ export function PoiExplorerScreen() {
           <Text style={styles.emptySearchText}>ลองเปลี่ยนคำค้นหา หรือเลือกหมวด “ทั้งหมด”</Text>
         </View>
       }
+      ListFooterComponent={<Link href="/photo-credits" style={{ paddingVertical: 16, color: colors.textMuted }}>แหล่งที่มาของรูปสถานที่</Link>}
       showsVerticalScrollIndicator={false}
     />
   );
@@ -251,23 +254,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 17,
     paddingBottom: 44,
   },
-  hero: {
-    overflow: 'hidden',
-    borderRadius: 34,
-    backgroundColor: colors.navy,
-    padding: 0,
-    marginTop: 4,
-    shadowColor: colors.navy,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.24,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  bannerImage: { width: '100%', aspectRatio: 2, resizeMode: 'cover' },
-  heroCopy: { padding: 20 },
-  brandEyebrow: { color: colors.gold, fontSize: 10, fontWeight: '800', letterSpacing: 1.4 },
-  heroTitle: { color: '#FFFFFF', fontSize: 26, lineHeight: 35, fontWeight: '800', marginTop: 10 },
-  heroSubtitle: { color: '#C8D4E6', fontSize: 13, lineHeight: 21, marginTop: 8 },
+  shortcuts: { flexDirection: 'row', gap: 10, paddingTop: 12 },
+  shortcut: { flex: 1, minWidth: 0, minHeight: 52, padding: 12, borderRadius: 16, backgroundColor: '#FFF0BC', justifyContent: 'center' },
+  shortcutText: { fontSize: 15, fontWeight: '800', color: colors.navy, textAlign: 'center' },
   mapSectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -420,8 +409,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   poiCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     minHeight: 76,
     borderRadius: 22,
     borderWidth: 1,

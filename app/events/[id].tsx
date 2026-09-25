@@ -1,3 +1,4 @@
+import { CoverPhoto } from '../../src/components/CoverPhoto';
 import { useEffect, useRef, useState } from 'react';
 import {
   Alert,
@@ -173,6 +174,7 @@ export default function EventDetail() {
           </View>
         ) : (
           <>
+            <CoverPhoto poiId={event.poiId} title={poi?.name ?? event.title} height={196} />
             <Text accessibilityRole="header" style={styles.title}>
               {event.title}
             </Text>
