@@ -90,14 +90,14 @@ export function PoiExplorerScreen() {
                 return (
                   <Pressable
                     key={category}
-                    accessibilityLabel={`กรองหมวด ${category}`}
+                    accessibilityLabel={`กรองหมวด ${category}, ${category === 'ทั้งหมด' ? pointsOfInterest.length : pointsOfInterest.filter((poi) => poi.category === category).length} สถานที่`}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                     onPress={() => setSelectedCategory(category)}
                     style={[styles.filterChip, selected && styles.filterChipSelected]}
                   >
                     <Text style={[styles.filterChipText, selected && styles.filterChipTextSelected]}>
-                      {category}
+                      {category} ({category === 'ทั้งหมด' ? pointsOfInterest.length : pointsOfInterest.filter((poi) => poi.category === category).length})
                     </Text>
                   </Pressable>
                 );
@@ -191,7 +191,7 @@ export function PoiExplorerScreen() {
           <View style={styles.listHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>CURATED COLLECTION</Text>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>10 สถานที่สำคัญ</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>{filteredPoints.length} สถานที่{selectedCategory === 'ทั้งหมด' ? 'น่าไป' : ` · ${selectedCategory}`}</Text>
             </View>
             <Text style={styles.listHint}>แตะเพื่อเลือก</Text>
           </View>
@@ -396,8 +396,9 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   listHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 34,
     marginBottom: 12,

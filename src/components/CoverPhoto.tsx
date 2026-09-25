@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Image, StyleSheet, Text, View } from 'react-native';
+import { pointsOfInterest } from '../data/pointsOfInterest';
 import { placePhotos } from '../data/placePhotos';
 
 export function CoverPhoto({ poiId, title, height = 176 }: { poiId: string; title: string; height?: number }) {
@@ -7,11 +8,13 @@ export function CoverPhoto({ poiId, title, height = 176 }: { poiId: string; titl
 }
 function Photo({ poiId, title, height }: { poiId: string; title: string; height: number }) {
   const photo = placePhotos[poiId];
+  const place = pointsOfInterest.find((poi) => poi.id === poiId);
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   return <View style={[styles.frame, { height }]}>
     {(!loaded || failed || !photo) && <View style={styles.placeholder}>
-      <Text style={styles.label}>{failed || !photo ? 'ยังแสดงรูปไม่ได้' : 'กำลังโหลดรูป…'}</Text>
+      {!photo && <><Text accessible={false} style={{ fontSize: 36 }}>{place?.icon ?? '📍'}</Text><Text style={{ color: '#0C203B', fontWeight: '700', marginVertical: 8 }}>{place?.category ?? 'สถานที่'}</Text></>}
+      <Text style={styles.label}>{!photo ? 'ยังไม่มีภาพสถานที่' : failed ? 'ยังแสดงรูปไม่ได้' : 'กำลังโหลดรูป…'}</Text>
     </View>}
     {!!photo && !failed && <Image source={{ uri: photo.uri }} style={styles.image}
       resizeMode="cover" accessibilityLabel={`รูปสถานที่ ${title}`}

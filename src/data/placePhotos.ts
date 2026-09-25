@@ -59,4 +59,10 @@ export const placePhotos: Record<string, { uri: string; source: string; author: 
     "author": "Khon Kaen Airport - DOA",
     "license": "CC BY 4.0"
   }
+  ,"phu-wiang-museum": {
+    "uri": "https://commons.wikimedia.org/wiki/Special:FilePath/Museum_Dinosaur_KK.jpg?width=960",
+    "source": "https://commons.wikimedia.org/wiki/File:Museum_Dinosaur_KK.jpg",
+    "author": "Wickanet",
+    "license": "CC BY 3.0"
+  }
 };
