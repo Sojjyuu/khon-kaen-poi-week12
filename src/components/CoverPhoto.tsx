@@ -13,12 +13,13 @@ function Photo({ poiId, title, height }: { poiId: string; title: string; height:
     {(!loaded || failed || !photo) && <View style={styles.placeholder}>
       <Text style={styles.label}>{failed || !photo ? 'ยังแสดงรูปไม่ได้' : 'กำลังโหลดรูป…'}</Text>
     </View>}
-    {!!photo && !failed && <Image source={{ uri: photo.uri }} style={StyleSheet.absoluteFillObject}
+    {!!photo && !failed && <Image source={{ uri: photo.uri }} style={styles.image}
       resizeMode="cover" accessibilityLabel={`รูปสถานที่ ${title}`}
       onLoad={() => setLoaded(true)} onError={() => setFailed(true)} />}
   </View>;
 }
 const styles = StyleSheet.create({
+  image: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 },
   frame: { width: '100%', flexShrink: 0, overflow: 'hidden', borderRadius: 16, backgroundColor: '#E8EDF1', marginBottom: 12 },
   placeholder: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 16 },
   label: { color: '#546278', fontSize: 13 },
