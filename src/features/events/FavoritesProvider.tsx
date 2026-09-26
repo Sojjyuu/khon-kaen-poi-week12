@@ -1,3 +1,4 @@
+import { requireAccount } from '../auth/requireAccount';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { loadEventFavorites, toggleEventFavorite } from './eventFavorites';
 
@@ -11,10 +12,11 @@ export function FavoritesProvider({ children }: { children: ReactNode }) {
     let active = true;
     void loadEventFavorites().then((stored) => {
       if (active) { setIds(stored); setReady(true); }
-    });
+    }).catch(() => { if (active) setReady(true); });
     return () => { active = false; };
   }, []);
   const toggle = useCallback(async (id: string) => {
+    if (!requireAccount()) return;
     const updated = await toggleEventFavorite(id);
     setIds(updated);
   }, []);

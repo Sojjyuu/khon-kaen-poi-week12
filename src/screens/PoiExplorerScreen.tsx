@@ -1,6 +1,7 @@
+import { requireAccount } from '../features/auth/requireAccount';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link, router, useFocusEffect } from 'expo-router';
-import { FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { CoverPhoto } from '../components/CoverPhoto';
 import { PoiMap } from '../components/PoiMap';
@@ -39,7 +40,9 @@ export function PoiExplorerScreen() {
   );
 
   const toggleTrip = useCallback(async () => {
-    setFavoriteIds(await toggleFavoritePoi(selectedPoi.id));
+    if (!requireAccount()) return;
+    try { setFavoriteIds(await toggleFavoritePoi(selectedPoi.id)); }
+    catch { Alert.alert('บันทึกทริปไม่ได้', 'กรุณาลองอีกครั้ง'); }
   }, [selectedPoi.id]);
 
   const selectPoi = useCallback((poi: PointOfInterest) => {

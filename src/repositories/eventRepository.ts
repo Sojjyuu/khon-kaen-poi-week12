@@ -1,10 +1,11 @@
+import { getAccountScope } from '../storage/accountScope';
 import { pointsOfInterest } from '../data/pointsOfInterest';
 import {
   isEventId,
   isUserCreatedEventId,
   type CampusEvent,
 } from '../features/events/types';
-import { eventStorage, type EventStorage } from '../storage/eventStorage';
+import { createAccountEventStorage, eventStorage, type EventStorage } from '../storage/eventStorage';
 import { cachedRemoteEvents } from '../features/events/remoteEvents';
 import { fetchCampusEvent, hasCampusApi } from '../services/campusApi';
 import { isCoordinates, type Coordinates } from '../types/coordinates';
@@ -112,7 +113,23 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
   };
 }
 
-export const eventRepository = createEventRepository();
+// Capture a repository per account so in-flight writes never move to another user.
+const repositories = new Map<string | null, ReturnType<typeof createEventRepository>>();
+function currentRepository() {
+  const owner = getAccountScope();
+  let repository = repositories.get(owner);
+  if (!repository) {
+    repository = createEventRepository(createAccountEventStorage(owner));
+    repositories.set(owner, repository);
+  }
+  return repository;
+}
+export const eventRepository = {
+  list: () => currentRepository().list(),
+  findById: (id: unknown) => currentRepository().findById(id),
+  create: (...args: Parameters<ReturnType<typeof createEventRepository>['create']>) => currentRepository().create(...args),
+  remove: (id: unknown) => currentRepository().remove(id),
+};
 
 export function formatEventTime(iso: string) {
   return (

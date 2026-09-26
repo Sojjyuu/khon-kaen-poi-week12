@@ -63,3 +63,15 @@ npx eas-cli@latest build --platform android --profile preview
 - External image responses vary by host. Wikimedia rate-limited this environment during bulk checks; image display on the user's device remains to be confirmed. No claim that all remote images work offline.
 - Expo Doctor was not rerun in this change; previous dependency patch-version findings remain separate from these passing checks.
 - Classroom API account records are in-memory and reset when the API process restarts; see accounts-setup.md.
+
+## Account persistence and separate profiles — 2026-09-26
+
+- `npm run typecheck`: PASS
+- `npm run lint`: PASS
+- `npm test`: PASS — 17 Node tests + 20 Jest tests (37 total)
+- Android/iOS `expo export`: PASS (bundle generation, not installed-device testing)
+- Regression coverage: signup/login, persistent account/profile/registration across server restart, hashed passwords/tokens on disk, logout revocation, expired-session rejection, SecureStore deletion failure during restore, account-specific trip/favorite queued writes and event repository caches.
+- User profile is now separate from `/about`; existing developer contact details preserved.
+- Manual verification still needed: phone keyboard/font scale, profile edit, switching accounts, force-close/reopen with API running.
+- Boundaries: single-process local API file persistence, device-local trip/favorites/events without cloud sync, existing device notifications not automatically canceled on logout, legacy unowned data not automatically assigned to a user. See `accounts-setup.md`.
+- Expo Doctor dependency patch mismatches noted in earlier reports were not changed by this task.

@@ -1,3 +1,4 @@
+import { requireAccount } from '../../src/features/auth/requireAccount';
 import { Profiler, useCallback, useRef, useState } from 'react';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import {
@@ -67,6 +68,7 @@ export default function Events() {
   }, []);
 
   const create = useCallback(async () => {
+    if (!requireAccount()) return;
     if (saving.current) return;
     saving.current = true;
     setBusy(true);

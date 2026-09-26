@@ -2,28 +2,52 @@
 const http = require('node:http');
 const { randomBytes, timingSafeEqual, scryptSync } = require('node:crypto');
 
+const fs = require('node:fs');
+const path = require('node:path');
+const { createHash } = require('node:crypto');
+const dataFile = process.env.CAMPUS_DATA_FILE || path.join(__dirname, '../.local-data/accounts.json');
+const ttl = Number(process.env.CAMPUS_SESSION_TTL_MS || 604800000);
+if (!Number.isFinite(ttl) || ttl <= 0) throw new Error('Invalid session TTL');
+const tokenKey = (token) => createHash('sha256').update(token).digest('hex');
+
 const email = process.env.CAMPUS_TEST_EMAIL;
 const password = process.env.CAMPUS_TEST_PASSWORD;
 if (!email || !password) {
   console.error('Set CAMPUS_TEST_EMAIL and CAMPUS_TEST_PASSWORD for a disposable test account.');
   process.exit(1);
 }
-const accounts = new Map();
-const sessions = new Map();
+let saved = { accounts: [], sessions: [], registrations: [] };
+if (fs.existsSync(dataFile)) saved = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+const accounts = new Map(saved.accounts.map(([key, value]) => [key, { ...value, hash: Buffer.from(value.hash, 'hex') }]));
+const sessions = new Map(saved.sessions);
+const registrations = new Map(saved.registrations);
+function persist() {
+  fs.mkdirSync(path.dirname(dataFile), { recursive: true, mode: 0o700 });
+  const snapshot = {
+    accounts: [...accounts].map(([key, value]) => [key, { ...value, hash: value.hash.toString('hex') }]),
+    sessions: [...sessions], registrations: [...registrations],
+  };
+  fs.writeFileSync(`${dataFile}.tmp`, JSON.stringify(snapshot), { mode: 0o600 });
+  fs.renameSync(`${dataFile}.tmp`, dataFile);
+}
 function addAccount(name, email, password, id = randomBytes(12).toString('hex')) {
   const salt = randomBytes(16).toString('hex');
-  const account = { user: { id, name }, salt, hash: scryptSync(password, salt, 64) };
+  const account = { user: { id, name, email: email.trim().toLowerCase() }, salt, hash: scryptSync(password, salt, 64) };
   accounts.set(email.trim().toLowerCase(), account);
   return account;
 }
 function issueSession(account) {
   const accessToken = randomBytes(32).toString('hex');
-  sessions.set(accessToken, account.user);
+  sessions.set(tokenKey(accessToken), { userId: account.user.id, expiresAt: Date.now() + ttl });
+  persist();
   return { accessToken, user: account.user };
 }
-addAccount('ผู้ทดสอบ', email, password, 'tester');
+if (!accounts.has(email.trim().toLowerCase())) {
+  addAccount('ผู้ทดสอบ', email, password, accounts.size === 0 ? 'tester' : randomBytes(12).toString('hex'));
+  persist();
+}
 const events = [{ id: 'api-event-1', title: 'เดินสำรวจมหาวิทยาลัยขอนแก่น', description: 'กิจกรรมตัวอย่างจาก API สำหรับทดสอบ', startsAt: '2030-09-24T09:00:00+07:00', poiId: 'kku' }];
-const registrations = new Map();
+
 const port = Number(process.env.PORT || 4100);
 const json = (res, status, value) => {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
@@ -49,7 +73,10 @@ const server = http.createServer(async (req, res) => {
       const event = events.find((item) => item.id === eventId);
       return json(res, event ? 200 : 404, event || { error: 'not-found' });
     }
-    const user = sessions.get((req.headers.authorization || '').replace(/^Bearer /, ''));
+    const sessionKey = tokenKey((req.headers.authorization || '').replace(/^Bearer /, ''));
+    const session = sessions.get(sessionKey);
+    const user = session && session.expiresAt > Date.now()
+      ? [...accounts.values()].find(account => account.user.id === session.userId)?.user : undefined;
     const photoRoute = path.match(/^\/events\/([\w-]+)\/registrations\/([\w-]+)\/photo$/);
     if (req.method === 'POST' && photoRoute) {
       if (!user) return json(res, 401, { error: 'unauthorized' });
@@ -96,6 +123,13 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, issueSession(account));
     }
     if (!user) return json(res, 401, { error: 'unauthorized' });
+    if (req.method === 'POST' && path === '/auth/logout') {
+      sessions.delete(sessionKey); persist(); return json(res, 200, { ok: true });
+    }
+    if (req.method === 'POST' && path === '/auth/profile') {
+      if (typeof body.name !== 'string' || !body.name.trim() || body.name.trim().length > 80) return json(res, 400, { error: 'invalid-name' });
+      user.name = body.name.trim(); persist(); return json(res, 200, user);
+    }
     if (req.method === 'GET' && path === '/auth/me') return json(res, 200, user);
     const registrationId = path.match(/^\/events\/([\w-]+)\/registrations$/)?.[1];
     if (req.method === 'POST' && registrationId) {
@@ -103,6 +137,7 @@ const server = http.createServer(async (req, res) => {
       if (typeof body.fullName !== 'string' || !body.fullName.trim() || !/^\S+@\S+\.\S+$/.test(body.email)) return json(res, 400, { error: 'invalid-fields' });
       const key = `${user.id}/${registrationId}`;
       if (!registrations.has(key)) registrations.set(key, `reg-${randomBytes(6).toString('hex')}`);
+      persist();
       return json(res, 200, { registrationId: registrations.get(key) });
     }
     return json(res, 404, { error: 'not-found' });

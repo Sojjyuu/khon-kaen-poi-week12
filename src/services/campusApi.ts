@@ -15,6 +15,12 @@ export class ApiError extends Error {
   }
 }
 
+const unauthorizedListeners = new Set<(token: string) => void>();
+export function onUnauthorized(listener: (token: string) => void) {
+  unauthorizedListeners.add(listener);
+  return () => { unauthorizedListeners.delete(listener); };
+}
+
 export async function requestJson(path: string, options: RequestInit = {}, token?: string): Promise<unknown> {
   const baseUrl = apiUrl();
   if (!baseUrl) throw new Error('ยังไม่ได้ตั้งค่า EXPO_PUBLIC_API_URL');
@@ -27,6 +33,7 @@ export async function requestJson(path: string, options: RequestInit = {}, token
       ...options.headers,
     },
   });
+  if (response.status === 401 && token) unauthorizedListeners.forEach(listener => listener(token));
   if (!response.ok) throw new ApiError(response.status, `เซิร์ฟเวอร์ตอบกลับ ${response.status}`);
   return response.json();
 }

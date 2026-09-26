@@ -1,3 +1,4 @@
+import { ActivityIndicator, Text, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { Stack, router, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -9,7 +10,13 @@ import { SessionProvider, useSession } from '../src/features/auth/session';
 import { FavoritesProvider } from '../src/features/events/FavoritesProvider';
 
 export default function RootLayout() {
-  return <SessionProvider><FavoritesProvider><AppRoutes /></FavoritesProvider></SessionProvider>;
+  return <SessionProvider><AccountRoutes /></SessionProvider>;
+}
+
+function AccountRoutes() {
+  const { session } = useSession();
+  if (session.status === 'loading') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}><ActivityIndicator /><Text>กำลังตรวจสอบบัญชี…</Text></View>;
+  return <FavoritesProvider key={session.status === 'authenticated' ? session.user.id : 'guest'}><AppRoutes /></FavoritesProvider>;
 }
 
 function AppRoutes() {
@@ -47,6 +54,7 @@ function AppRoutes() {
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="events/[id]" options={{ title: 'รายละเอียดกิจกรรม' }} />
         <Stack.Screen name="trip" options={{ title: 'My Trip' }} />
+        <Stack.Screen name="about" options={{ title: 'เกี่ยวกับผู้พัฒนา' }} />
         <Stack.Screen name="camera" options={{ title: 'Camera' }} />
         <Stack.Protected guard={session.status === 'anonymous'}>
           <Stack.Screen name="login" options={{ title: 'เข้าสู่ระบบ' }} />

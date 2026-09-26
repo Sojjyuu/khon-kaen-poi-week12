@@ -130,3 +130,7 @@ GitHub Actions workflow: **Week 12 Quality Check**
 https://github.com/Sojjyuu/khon-kaen-poi-week12
 
 ชุดปรับปรุงนี้ใช้ branch `course-gaps-integration` และไม่อัปโหลด `node_modules`, `.expo`, `.env` หรือ secret/API key
+
+### บัญชีและโปรไฟล์ (26 ก.ย. 2026)
+
+โปรไฟล์ผู้ใช้แยกจากหน้าเกี่ยวกับผู้พัฒนา (`/about`) แก้ชื่อและออกจากระบบได้ บัญชีและ session เก็บถาวรในไฟล์บนเครื่อง API ส่วน My Trip/รายการโปรด/กิจกรรมส่วนตัวแยกตามบัญชีบนโทรศัพท์ โปรดอ่าน [การตั้งค่าและขอบเขต](docs/accounts-setup.md) ก่อนทดสอบ ไม่มีการซิงก์ทริปข้ามเครื่อง
