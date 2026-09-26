@@ -1,4 +1,4 @@
-import { Stack } from 'expo-router';
+import { Stack, router } from 'expo-router';
 import {
   Alert,
   Image,
@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../../src/theme/colors';
+import { Action, eventStyles } from '../../src/components/EventUI';
 import { useSession } from '../../src/features/auth/session';
 
 const profileImage = require('../../assets/profile-restored.jpg');
@@ -78,6 +79,14 @@ export default function ProfileScreen() {
 
       <SafeAreaView style={styles.safe} edges={['left', 'right']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+          <View style={eventStyles.card}>
+            <Text accessibilityRole="header" style={eventStyles.subtitle}>บัญชีของฉัน</Text>
+            <Text style={eventStyles.text}>{session.status === 'authenticated' ? `สวัสดี ${session.user.name}` : session.status === 'loading' ? 'กำลังตรวจสอบบัญชี…' : 'เข้าสู่ระบบเพื่อสมัครเข้าร่วมกิจกรรม'}</Text>
+            {session.status === 'anonymous' && <>
+              <Action title="เข้าสู่ระบบ" onPress={() => router.push('/login')} />
+              <Action title="สมัครสมาชิกใหม่" variant="secondary" onPress={() => router.push('/signup')} />
+            </>}
+          </View>
           <ImageBackground source={profileImage} imageStyle={styles.coverImage} style={styles.cover}>
             <View style={styles.coverShade} />
             <View style={styles.coverContent}>
@@ -154,7 +163,7 @@ export default function ProfileScreen() {
               </Text>
             </View>
           </View>
-          {session.status === 'authenticated' && <Pressable accessibilityRole="button" accessibilityLabel="ออกจากระบบ" onPress={() => void logout()} style={styles.contactButton}>
+          {session.status === 'authenticated' && <Pressable accessibilityRole="button" accessibilityLabel="ออกจากระบบ" onPress={() => void logout().catch(() => Alert.alert('ออกจากระบบไม่สำเร็จ', 'กรุณาลองอีกครั้ง'))} style={styles.contactButton}>
             <Text style={styles.contactLabel}>ออกจากระบบ ({session.user.name})</Text>
           </Pressable>}
         </ScrollView>

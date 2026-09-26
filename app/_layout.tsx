@@ -50,6 +50,7 @@ function AppRoutes() {
         <Stack.Screen name="camera" options={{ title: 'Camera' }} />
         <Stack.Protected guard={session.status === 'anonymous'}>
           <Stack.Screen name="login" options={{ title: 'เข้าสู่ระบบ' }} />
+          <Stack.Screen name="signup" options={{ title: 'สมัครสมาชิก' }} />
         </Stack.Protected>
         <Stack.Protected guard={session.status === 'authenticated'}>
           <Stack.Screen name="register" options={{ title: 'ลงทะเบียนกิจกรรม' }} />

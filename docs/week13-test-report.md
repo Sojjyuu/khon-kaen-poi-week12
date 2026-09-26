@@ -49,3 +49,17 @@ npx eas-cli@latest build --platform android --profile preview
 - Expo Go บน Android จำกัด native notification module และ remote push; ทดสอบ notification จริงบน Preview Build ด้วย
 - Web export ของชุดนี้ยังไม่ได้ยืนยัน
 - ยังไม่มีผลติดตั้ง APK ใหม่บนอุปกรณ์จริง
+
+
+## 26 September 2026 — places and account UI
+
+- `npm ci --no-audit --no-fund`: completed using the existing lockfile.
+- `npm run typecheck`: passed.
+- `npm run lint`: passed.
+- `npm test`: 32 passed (16 Node integration/repository tests + 16 Jest component/unit tests).
+- `CI=1 npx expo export --platform android --platform ios --output-dir /tmp/poi-export`: both native bundles generated. This is a bundle check, not a physical-device test or installable preview build.
+- New regression coverage: signup field validation, email normalization/duplicate rejection, password mismatch blocking, successful secure token storage, API login/restore, duplicate-email UI retains inputs.
+- Photo metadata covers all 28 places. Replaced dead school/venue photo URLs found during checks. O Chira uses an explicitly captioned nearby-road photograph; not an inside-market photo.
+- External image responses vary by host. Wikimedia rate-limited this environment during bulk checks; image display on the user's device remains to be confirmed. No claim that all remote images work offline.
+- Expo Doctor was not rerun in this change; previous dependency patch-version findings remain separate from these passing checks.
+- Classroom API account records are in-memory and reset when the API process restarts; see accounts-setup.md.

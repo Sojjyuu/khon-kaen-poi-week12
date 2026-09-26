@@ -8,6 +8,7 @@ type Session = { status: 'loading' | 'anonymous' } | { status: 'authenticated'; 
 type SessionContext = {
   session: Session;
   login(email: string, password: string): Promise<void>;
+  signup(name: string, email: string, password: string): Promise<void>;
   logout(): Promise<void>;
 };
 const Context = createContext<SessionContext | null>(null);
@@ -35,19 +36,21 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     })();
     return () => { active = false; };
   }, []);
-  const login = useCallback(async (email: string, password: string) => {
-    const result = await requestJson('/auth/login', { method: 'POST', body: JSON.stringify({ email, password }) });
+  const authenticate = useCallback(async (path: string, fields: Record<string, string>) => {
+    const result = await requestJson(path, { method: 'POST', body: JSON.stringify(fields) });
     if (!result || typeof result !== 'object') throw new Error('ข้อมูลเข้าสู่ระบบไม่ถูกต้อง');
     const { accessToken, user } = result as { accessToken?: unknown; user?: unknown };
     if (typeof accessToken !== 'string' || !isUser(user)) throw new Error('ข้อมูลเข้าสู่ระบบไม่ถูกต้อง');
     await SecureStore.setItemAsync(KEY, accessToken);
     setSession({ status: 'authenticated', token: accessToken, user });
   }, []);
+  const login = useCallback((email: string, password: string) => authenticate('/auth/login', { email, password }), [authenticate]);
+  const signup = useCallback((name: string, email: string, password: string) => authenticate('/auth/register', { name, email, password }), [authenticate]);
   const logout = useCallback(async () => {
     await SecureStore.deleteItemAsync(KEY);
     setSession({ status: 'anonymous' });
   }, []);
-  const value = useMemo(() => ({ session, login, logout }), [session, login, logout]);
+  const value = useMemo(() => ({ session, login, signup, logout }), [session, login, signup, logout]);
   return <Context.Provider value={value}>{children}</Context.Provider>;
 }
 

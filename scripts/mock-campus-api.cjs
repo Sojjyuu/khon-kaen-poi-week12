@@ -1,6 +1,6 @@
 // Local classroom API only. Set credentials via environment variables; never use real accounts.
 const http = require('node:http');
-const { randomBytes, timingSafeEqual } = require('node:crypto');
+const { randomBytes, timingSafeEqual, scryptSync } = require('node:crypto');
 
 const email = process.env.CAMPUS_TEST_EMAIL;
 const password = process.env.CAMPUS_TEST_PASSWORD;
@@ -8,18 +8,26 @@ if (!email || !password) {
   console.error('Set CAMPUS_TEST_EMAIL and CAMPUS_TEST_PASSWORD for a disposable test account.');
   process.exit(1);
 }
-const token = randomBytes(32).toString('hex');
-const user = { id: 'tester', name: 'ผู้ทดสอบ' };
+const accounts = new Map();
+const sessions = new Map();
+function addAccount(name, email, password, id = randomBytes(12).toString('hex')) {
+  const salt = randomBytes(16).toString('hex');
+  const account = { user: { id, name }, salt, hash: scryptSync(password, salt, 64) };
+  accounts.set(email.trim().toLowerCase(), account);
+  return account;
+}
+function issueSession(account) {
+  const accessToken = randomBytes(32).toString('hex');
+  sessions.set(accessToken, account.user);
+  return { accessToken, user: account.user };
+}
+addAccount('ผู้ทดสอบ', email, password, 'tester');
 const events = [{ id: 'api-event-1', title: 'เดินสำรวจมหาวิทยาลัยขอนแก่น', description: 'กิจกรรมตัวอย่างจาก API สำหรับทดสอบ', startsAt: '2030-09-24T09:00:00+07:00', poiId: 'kku' }];
 const registrations = new Map();
 const port = Number(process.env.PORT || 4100);
 const json = (res, status, value) => {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   res.end(JSON.stringify(value));
-};
-const equal = (a, b) => {
-  const first = Buffer.from(String(a)); const second = Buffer.from(String(b));
-  return first.length === second.length && timingSafeEqual(first, second);
 };
 async function readBody(req, maxBytes) {
   const chunks = [];
@@ -41,9 +49,10 @@ const server = http.createServer(async (req, res) => {
       const event = events.find((item) => item.id === eventId);
       return json(res, event ? 200 : 404, event || { error: 'not-found' });
     }
+    const user = sessions.get((req.headers.authorization || '').replace(/^Bearer /, ''));
     const photoRoute = path.match(/^\/events\/([\w-]+)\/registrations\/([\w-]+)\/photo$/);
     if (req.method === 'POST' && photoRoute) {
-      if (req.headers.authorization !== `Bearer ${token}`) return json(res, 401, { error: 'unauthorized' });
+      if (!user) return json(res, 401, { error: 'unauthorized' });
       if (registrations.get(`${user.id}/${photoRoute[1]}`) !== photoRoute[2]) return json(res, 404, { error: 'not-found' });
       const boundary = /^multipart\/form-data; boundary=(?:"([\w-]{1,70})"|([\w-]{1,70}))/.exec(req.headers['content-type'] || '');
       if (!boundary) return json(res, 415, { error: 'invalid-content-type' });
@@ -69,11 +78,24 @@ const server = http.createServer(async (req, res) => {
       if (!raw) return json(res, 413, { error: 'too-large' });
       try { body = JSON.parse(raw.toString('utf8')); } catch { return json(res, 400, { error: 'invalid-json' }); }
     }
-    if (req.method === 'POST' && path === '/auth/login') {
-      return equal(body.email, email) && equal(body.password, password)
-        ? json(res, 200, { accessToken: token, user }) : json(res, 401, { error: 'invalid-credentials' });
+    if (!body || typeof body !== 'object' || Array.isArray(body)) return json(res, 400, { error: 'invalid-fields' });
+    if (req.method === 'POST' && path === '/auth/register') {
+      if (typeof body.name !== 'string' || !body.name.trim() || body.name.length > 80 ||
+          typeof body.email !== 'string' || body.email.length > 254 || !/^\S+@\S+\.\S+$/.test(body.email.trim()) ||
+          typeof body.password !== 'string' || body.password.length < 8 || body.password.length > 128) {
+        return json(res, 400, { error: 'invalid-fields' });
+      }
+      const address = body.email.trim().toLowerCase();
+      if (accounts.has(address)) return json(res, 409, { error: 'email-exists' });
+      return json(res, 201, issueSession(addAccount(body.name.trim(), address, body.password)));
     }
-    if (req.headers.authorization !== `Bearer ${token}`) return json(res, 401, { error: 'unauthorized' });
+    if (req.method === 'POST' && path === '/auth/login') {
+      const account = typeof body.email === 'string' ? accounts.get(body.email.trim().toLowerCase()) : null;
+      if (!account || typeof body.password !== 'string' || body.password.length > 128 ||
+          !timingSafeEqual(account.hash, scryptSync(body.password, account.salt, 64))) return json(res, 401, { error: 'invalid-credentials' });
+      return json(res, 200, issueSession(account));
+    }
+    if (!user) return json(res, 401, { error: 'unauthorized' });
     if (req.method === 'GET' && path === '/auth/me') return json(res, 200, user);
     const registrationId = path.match(/^\/events\/([\w-]+)\/registrations$/)?.[1];
     if (req.method === 'POST' && registrationId) {

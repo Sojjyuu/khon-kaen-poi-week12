@@ -255,4 +255,50 @@ export const pointsOfInterest: PointOfInterest[] = [
     "longitude": 102.81718,
     "sourceUrl": "https://mapcarta.com/N375651808"
   },
+
+  {
+    "id": "khon-kaen-wittayayon",
+    "name": "โรงเรียนขอนแก่นวิทยายน",
+    "category": "การศึกษา",
+    "icon": "🏫",
+    "address": "ถนนกลางเมือง ตำบลในเมือง อำเภอเมืองขอนแก่น",
+    "description": "โรงเรียนมัธยมในตัวเมืองขอนแก่น สำหรับติดต่อหรือร่วมกิจกรรมของโรงเรียน ควรตรวจวันเปิดและขออนุญาตก่อนเข้าพื้นที่",
+    "latitude": 16.43194,
+    "longitude": 102.835,
+    "sourceUrl": "https://www.wikidata.org/wiki/Q6402209"
+  },
+  {
+    "id": "kaen-nakhon-school",
+    "name": "โรงเรียนแก่นนครวิทยาลัย",
+    "category": "การศึกษา",
+    "icon": "🏫",
+    "address": "ถนนเหล่านาดี ตำบลในเมือง อำเภอเมืองขอนแก่น",
+    "description": "โรงเรียนมัธยมย่านเหล่านาดี เหมาะเป็นจุดหมายสำหรับกิจกรรมการศึกษา กรุณาติดต่อโรงเรียนก่อนเข้าชม",
+    "latitude": 16.41685,
+    "longitude": 102.82449,
+    "sourceUrl": "https://th.geoview.info/rongreiyn_kn_nkhr_withyalay,3824870r"
+  },
+  {
+    "id": "pullman-raja-orchid",
+    "name": "พูลแมน ขอนแก่น ราชา ออคิด",
+    "category": "โรงแรมและที่พัก",
+    "icon": "🏨",
+    "address": "9/9 ถนนประชาสำราญ ตำบลในเมือง อำเภอเมืองขอนแก่น",
+    "description": "โรงแรมในตัวเมือง พร้อมพื้นที่รับประทานอาหารและจัดประชุม ตรวจบริการและเงื่อนไขกับโรงแรมก่อนเดินทาง",
+    "latitude": 16.429798,
+    "longitude": 102.830379,
+    "sourceUrl": "https://pullman.accor.com/en/hotels/khon-kaen/1877.html"
+  },
+  {
+    "id": "phra-that-kham-kaen",
+    "name": "พระธาตุขามแก่น",
+    "category": "ศาสนาและวัฒนธรรม",
+    "icon": "🛕",
+    "address": "วัดเจติยภูมิ ตำบลบ้านขาม อำเภอน้ำพอง จังหวัดขอนแก่น",
+    "description": "พระธาตุคู่บ้านคู่เมืองขอนแก่นในอำเภอน้ำพอง เหมาะกับทริปไหว้พระและเรียนรู้วัฒนธรรม ควรเผื่อเวลาเดินทางออกจากตัวเมือง",
+    "latitude": 16.56361,
+    "longitude": 102.95194,
+    "sourceUrl": "https://kklocal.go.th/travel/detail/6/data.html"
+  }
+
 ];
