@@ -10,6 +10,7 @@ function openAccountStore(filename, legacyFile) {
     CREATE TABLE IF NOT EXISTS accounts(email TEXT PRIMARY KEY, data TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(digest TEXT PRIMARY KEY, data TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS registrations(owner_event TEXT PRIMARY KEY, id TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS registration_events(owner TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(owner,id));
     CREATE TABLE IF NOT EXISTS journeys(owner TEXT NOT NULL, id TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(owner,id));
     CREATE TABLE IF NOT EXISTS metadata(key TEXT PRIMARY KEY, value TEXT NOT NULL);`);
   function save(snapshot) {
@@ -46,6 +47,8 @@ function openAccountStore(filename, legacyFile) {
       registrations: db.prepare('SELECT * FROM registrations').all().map(row => [row.owner_event, row.id]),
     }),
     save,
+    saveRegistrationEvent: (owner, event) => db.prepare('INSERT INTO registration_events VALUES (?,?,?) ON CONFLICT(owner,id) DO UPDATE SET data=excluded.data').run(owner, event.id, JSON.stringify(event)),
+
     listJourneys: owner => db.prepare("SELECT data FROM journeys WHERE owner=? ORDER BY json_extract(data, '$.date') DESC").all(owner).map(row => JSON.parse(row.data)),
     saveJourney: (owner, trip) => db.prepare('INSERT INTO journeys VALUES (?,?,?) ON CONFLICT(owner,id) DO UPDATE SET data=excluded.data').run(owner, trip.id, JSON.stringify(trip)),
     deleteJourney: (owner, id) => db.prepare('DELETE FROM journeys WHERE owner=? AND id=?').run(owner, id),

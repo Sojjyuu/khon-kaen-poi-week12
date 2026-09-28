@@ -115,7 +115,22 @@ test('accounts, profile, registration and sessions survive restart; logout and e
   assert.equal((await list(alice.accessToken))[0].title, trip.title);
 
   const registration = await (await post('/events/api-event-1/registrations', { fullName: 'Alice', email: credentials.email }, alice.accessToken)).json();
+  const localEvent = { id: 'explore-kku', title: 'เดินสำรวจ มข.', description: 'ตัวอย่างในเครื่อง', startsAt: '2030-10-01T09:00:00+07:00', poiId: 'kku' };
+  const localRoute = '/events/explore-kku/registrations';
+  const fields = { fullName: 'Alice', email: credentials.email, localEvent };
+  assert.equal((await post(localRoute, { ...fields, localEvent: undefined }, alice.accessToken)).status, 404);
+  assert.equal((await post(localRoute, { ...fields, localEvent: { ...localEvent, id: 'other' } }, alice.accessToken)).status, 400);
+  const localRegistration = await (await post(localRoute, fields, alice.accessToken)).json();
+  assert.match(localRegistration.registrationId, /^reg-/);
+  assert.equal((await (await post(localRoute, fields, alice.accessToken)).json()).registrationId, localRegistration.registrationId);
+  const bobRegistration = await (await post(localRoute, fields, bob.accessToken)).json();
+  assert.notEqual(bobRegistration.registrationId, localRegistration.registrationId);
+  assert.equal((await fetch(`${url}/events/explore-kku/registrations/${localRegistration.registrationId}/photo`, { method: 'POST', headers: { Authorization: `Bearer ${bob.accessToken}` }, body: '{}' })).status, 404);
+  const customEvent = { ...localEvent, id: 'local-123-user', title: 'กิจกรรมที่สร้างเอง' };
+  assert.equal((await post('/events/local-123-user/registrations', { ...fields, localEvent: customEvent }, alice.accessToken)).status, 200);
+  assert.equal((await fetch(`${url}/events`).then(r => r.json())).length, 1);
   await stop(); url = await start();
+  assert.equal((await (await post(localRoute, fields, alice.accessToken)).json()).registrationId, localRegistration.registrationId);
   const me = await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${alice.accessToken}` } }).then(r => r.json());
   assert.equal(me.name, 'Updated Alice');
   assert.equal(me.bio, 'เที่ยวขอนแก่น');

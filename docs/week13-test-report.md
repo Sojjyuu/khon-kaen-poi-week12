@@ -101,3 +101,11 @@ Persistence/integration: import legacy JSON once into SQLite while preserving ID
 UI: new journey form validates before sending, keeps the draft when API fails, and submits with the current account's token. Notifications: owner-scoped payload/identifier; logout cancels reminders while preserving unrelated notifications; queued old-account work rejected; another account's notification tap ignored.
 
 Phone checks still required: iOS/Android photo picker (cancel/oversized photo), native SecureStore end-to-end signup, safe-area/font size on new screens, notification delivery and dismissal after logout. No device test or Preview Build claimed in this run. Expo Doctor was not rerun in this change; see previous baseline findings. API remains local classroom service, not public production hosting.
+
+## Registration regression — 2026-09-29
+
+Reproduction: sign in, open a device-seeded `explore-*` event or a user-created `local-*` event, fill a valid registration form, submit without a photo. The API previously knew only `api-event-1` and returned 404; the UI hid that cause behind a generic error.
+
+Fix: submit the selected local event snapshot alongside registration. Validate the snapshot and its matching ID at the API, store it privately under the authenticated account in SQLite, and retain the existing per-account/event deduplication. Local snapshots never enter the public event catalog. Arbitrary unknown IDs without valid snapshots still fail; photo upload remains tied to the authenticated owner's registration. UI now distinguishes missing event, invalid data, and connectivity errors.
+
+Validation: TypeScript and lint pass; Node tests 20/20 and Jest tests 26/26 (11 suites). Regression coverage submits the real registration screen, tests local/seeded events via the API, duplicate requests, restart persistence, malformed snapshots, and cross-account photo denial. Phone retest pending. Update both app code and running API before retrying; no account reset required.

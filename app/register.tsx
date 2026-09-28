@@ -7,7 +7,8 @@ import { Action, eventStyles as styles } from '../src/components/EventUI';
 import { useSession } from '../src/features/auth/session';
 import { registerForEvent, uploadRegistrationPhoto, validatePhoto, validateRegistration, type PhotoDraft } from '../src/features/events/registration';
 import { isEventId } from '../src/features/events/types';
-import { ApiError } from '../src/services/campusApi';
+import { eventRepository } from '../src/repositories/eventRepository';
+import { ApiConnectionError, ApiError } from '../src/services/campusApi';
 
 export default function Register() {
   const { id } = useLocalSearchParams<{ id?: string | string[] }>();
@@ -60,7 +61,10 @@ export default function Register() {
     setError('');
     let registered = false;
     try {
-      const result = await registerForEvent(eventId, fullName, email, session.token);
+      const local = eventId.startsWith('explore-') || eventId.startsWith('local-');
+      const event = local ? await eventRepository.findById(eventId) : undefined;
+      if (local && !event) throw new ApiError(404, 'event-not-found');
+      const result = await registerForEvent(eventId, fullName, email, session.token, event);
       registered = true;
       if (photo) {
         const registrationId = result && typeof result === 'object'
@@ -75,6 +79,9 @@ export default function Register() {
         router.replace('/login');
       } else setError(registered
         ? 'ลงทะเบียนแล้ว แต่ส่งรูปไม่สำเร็จ ข้อมูลยังอยู่ กรุณาลองส่งอีกครั้ง'
+         : caught instanceof ApiConnectionError ? caught.message
+        : caught instanceof ApiError && caught.status === 404 ? 'ไม่พบกิจกรรมในระบบ กรุณากลับไปเลือกรายการใหม่ หรืออัปเดตและเปิด API ใหม่'
+        : caught instanceof ApiError && caught.status === 400 ? 'ข้อมูลลงทะเบียนหรือกิจกรรมไม่ถูกต้อง กรุณาตรวจแล้วลองอีกครั้ง'
         : 'ลงทะเบียนไม่สำเร็จ ข้อมูลที่กรอกยังอยู่ กรุณาลองอีกครั้ง');
     }
     finally { submitting.current = false; setBusy(false); }

@@ -72,6 +72,17 @@ function validPhoto(photo, max) {
   return match[1] === 'png' ? bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
     : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 && bytes.at(-2) === 255 && bytes.at(-1) === 217;
 }
+// Device-created events are private snapshots, never additions to the public catalog.
+function validLocalEvent(event, id) {
+  if (!/^(explore-|local-)[a-zA-Z0-9_-]+$/.test(id) || id.length > 80 || !event || typeof event !== 'object') return false;
+  return event.id === id && typeof event.title === 'string' && event.title.trim().length > 0 && event.title.length <= 200 &&
+    typeof event.description === 'string' && event.description.length <= 4000 &&
+    typeof event.startsAt === 'string' && Number.isFinite(Date.parse(event.startsAt)) &&
+    typeof event.poiId === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(event.poiId) &&
+    (event.venue === undefined || (event.venue && Number.isFinite(event.venue.latitude) && Math.abs(event.venue.latitude) <= 90 &&
+      Number.isFinite(event.venue.longitude) && Math.abs(event.venue.longitude) <= 180));
+}
+
 function validJourney(body) {
   return typeof body.title === 'string' && body.title.trim().length > 0 && body.title.length <= 100 &&
     typeof body.note === 'string' && body.note.length <= 4000 && typeof body.date === 'string' &&
@@ -164,8 +175,15 @@ const server = http.createServer(async (req, res) => {
     }
     const registrationId = path.match(/^\/events\/([\w-]+)\/registrations$/)?.[1];
     if (req.method === 'POST' && registrationId) {
-      if (!events.some((item) => item.id === registrationId)) return json(res, 404, { error: 'not-found' });
-      if (typeof body.fullName !== 'string' || !body.fullName.trim() || !/^\S+@\S+\.\S+$/.test(body.email)) return json(res, 400, { error: 'invalid-fields' });
+      const publicEvent = events.some((item) => item.id === registrationId);
+      if (!publicEvent && !body.localEvent) return json(res, 404, { error: 'not-found' });
+      if (!publicEvent && !validLocalEvent(body.localEvent, registrationId)) return json(res, 400, { error: 'invalid-event' });
+      if (typeof body.fullName !== 'string' || !body.fullName.trim() || body.fullName.length > 200 ||
+          typeof body.email !== 'string' || body.email.length > 254 || !/^\S+@\S+\.\S+$/.test(body.email.trim())) return json(res, 400, { error: 'invalid-fields' });
+      if (!publicEvent) {
+        const { id, title, description, startsAt, poiId, venue } = body.localEvent;
+        storage.saveRegistrationEvent(user.id, { id, title, description, startsAt, poiId, ...(venue ? { venue } : {}) });
+      }
       const key = `${user.id}/${registrationId}`;
       if (!registrations.has(key)) registrations.set(key, `reg-${randomBytes(6).toString('hex')}`);
       persist();

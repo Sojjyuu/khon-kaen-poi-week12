@@ -1,3 +1,4 @@
+import type { CampusEvent } from './types';
 import { requestJson } from '../../services/campusApi';
 
 export function validateRegistration(fullName: string, email: string): string | null {
@@ -6,12 +7,12 @@ export function validateRegistration(fullName: string, email: string): string | 
   return null;
 }
 
-export async function registerForEvent(eventId: string, fullName: string, email: string, token: string) {
+export async function registerForEvent(eventId: string, fullName: string, email: string, token: string, localEvent?: CampusEvent) {
   const error = validateRegistration(fullName, email);
   if (error) throw new Error(error);
   return requestJson(`/events/${encodeURIComponent(eventId)}/registrations`, {
     method: 'POST',
-    body: JSON.stringify({ fullName: fullName.trim(), email: email.trim() }),
+    body: JSON.stringify({ fullName: fullName.trim(), email: email.trim(), ...(localEvent ? { localEvent } : {}) }),
   }, token);
 }
 
