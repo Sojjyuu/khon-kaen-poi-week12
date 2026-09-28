@@ -93,7 +93,7 @@ function validJourney(body) {
 const server = http.createServer(async (req, res) => {
   try {
     const path = new URL(req.url, 'http://localhost').pathname;
-    if (req.method === 'GET' && path === '/health') return json(res, 200, { ok: true });
+    if (req.method === 'GET' && path === '/health') return json(res, 200, { ok: true, apiVersion: 'registration-snapshots-v2' });
     if (req.method === 'GET' && path === '/events') return json(res, 200, events);
     const eventId = path.match(/^\/events\/([\w-]+)$/)?.[1];
     if (req.method === 'GET' && eventId) {
@@ -190,7 +190,11 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { registrationId: registrations.get(key) });
     }
     return json(res, 404, { error: 'not-found' });
-  } catch { return json(res, 500, { error: 'internal' }); }
+  } catch (error) {
+    // Log only error category/code, never tokens, names, email, request bodies or SQL values.
+    console.error('[API request failed]', error?.name || 'Error', error?.code || 'NO_CODE');
+    return json(res, 500, { error: 'internal' });
+  }
 });
 server.on('close', () => storage.close());
 server.on('error', error => {

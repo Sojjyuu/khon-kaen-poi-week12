@@ -2,7 +2,7 @@ import { fireEvent, render, waitFor } from '@testing-library/react-native';
 import { expect, it, jest } from '@jest/globals';
 import { router } from 'expo-router';
 import Register from '../../app/register';
-import { requestJson } from '../../src/services/campusApi';
+import { ApiError, requestJson } from '../../src/services/campusApi';
 
 jest.mock('expo-router', () => ({ router: { replace: jest.fn() }, useLocalSearchParams: () => ({ id: 'explore-kku' }) }));
 jest.mock('../../src/features/auth/session', () => ({ useSession: () => ({ session: { status: 'authenticated', token: 'test-token' }, logout: jest.fn() }) }));
@@ -19,4 +19,15 @@ it('registers the selected device event through API with its private snapshot', 
   expect(path).toBe('/events/explore-kku/registrations');
   expect(token).toBe('test-token');
   expect(JSON.parse(String(options?.body))).toMatchObject({ fullName: 'ผู้ทดสอบ', email: 'test@example.test', localEvent: { id: 'explore-kku', poiId: 'kku' } });
+});
+
+
+it('shows an HTTP diagnosis when the API fails instead of claiming the form is invalid', async () => {
+  jest.mocked(requestJson).mockRejectedValueOnce(new ApiError(500, 'internal'));
+  const screen = await render(<Register />);
+  await fireEvent.changeText(screen.getByLabelText('ชื่อ-นามสกุล'), 'ผู้ทดสอบ');
+  await fireEvent.changeText(screen.getByLabelText('อีเมล'), 'test@example.test');
+  await fireEvent.press(screen.getByRole('button', { name: 'ลงทะเบียน' }));
+  await waitFor(() => expect(screen.getByText(/HTTP 500/)).toBeTruthy());
+  expect(screen.getByLabelText('ชื่อ-นามสกุล').props.value).toBe('ผู้ทดสอบ');
 });

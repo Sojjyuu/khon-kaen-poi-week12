@@ -60,13 +60,16 @@ export default function Register() {
     setBusy(true);
     setError('');
     let registered = false;
+    let stage = 'load-event';
     try {
       const local = eventId.startsWith('explore-') || eventId.startsWith('local-');
       const event = local ? await eventRepository.findById(eventId) : undefined;
       if (local && !event) throw new ApiError(404, 'event-not-found');
+      stage = 'submit';
       const result = await registerForEvent(eventId, fullName, email, session.token, event);
       registered = true;
       if (photo) {
+        stage = 'photo';
         const registrationId = result && typeof result === 'object'
           ? (result as { registrationId?: unknown }).registrationId : undefined;
         if (typeof registrationId !== 'string') throw new Error('missing-registration-id');
@@ -82,7 +85,9 @@ export default function Register() {
          : caught instanceof ApiConnectionError ? caught.message
         : caught instanceof ApiError && caught.status === 404 ? 'ไม่พบกิจกรรมในระบบ กรุณากลับไปเลือกรายการใหม่ หรืออัปเดตและเปิด API ใหม่'
         : caught instanceof ApiError && caught.status === 400 ? 'ข้อมูลลงทะเบียนหรือกิจกรรมไม่ถูกต้อง กรุณาตรวจแล้วลองอีกครั้ง'
-        : 'ลงทะเบียนไม่สำเร็จ ข้อมูลที่กรอกยังอยู่ กรุณาลองอีกครั้ง');
+        : caught instanceof ApiError ? `ลงทะเบียนไม่สำเร็จ (HTTP ${caught.status}) กรุณาเปิด API ใหม่แล้วลองอีกครั้ง`
+        : stage === 'load-event' ? 'อ่านกิจกรรมในเครื่องไม่สำเร็จ (REG-LOCAL) กรุณากลับไปเปิดรายละเอียดกิจกรรมใหม่ ข้อมูลที่กรอกยังอยู่'
+        : 'ลงทะเบียนไม่สำเร็จ (REG-SUBMIT) ข้อมูลที่กรอกยังอยู่ กรุณาลองอีกครั้ง');
     }
     finally { submitting.current = false; setBusy(false); }
   };
