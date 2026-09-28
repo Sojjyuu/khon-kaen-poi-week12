@@ -7,6 +7,7 @@ export type ReminderNotification = {
 
 export type NotificationResponseData = {
   key: string;
+  ownerId: unknown;
   eventId: unknown;
   isDefaultAction: boolean;
 };
@@ -32,6 +33,7 @@ export const notificationService = {
     eventId: string;
     date: Date;
     test: boolean;
+    ownerId: string;
   }): Promise<string> {
     throw unsupported();
   },

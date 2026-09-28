@@ -1,13 +1,17 @@
+import Constants from 'expo-constants';
+import { resolveApiUrl } from './apiConfig';
 import type { CampusEvent } from '../features/events/types';
 import { isCoordinates } from '../types/coordinates';
 
 function apiUrl() {
-  return process.env.EXPO_PUBLIC_API_URL?.replace(/\/$/, '');
+  return resolveApiUrl(process.env.EXPO_PUBLIC_API_URL, Constants.expoConfig?.hostUri, __DEV__);
 }
 
 export function hasCampusApi() {
   return Boolean(apiUrl());
 }
+
+export class ApiConnectionError extends Error {}
 
 export class ApiError extends Error {
   constructor(public status: number, message: string) {
@@ -23,9 +27,16 @@ export function onUnauthorized(listener: (token: string) => void) {
 
 export async function requestJson(path: string, options: RequestInit = {}, token?: string): Promise<unknown> {
   const baseUrl = apiUrl();
-  if (!baseUrl) throw new Error('ยังไม่ได้ตั้งค่า EXPO_PUBLIC_API_URL');
+  if (!baseUrl) throw new ApiConnectionError('ยังไม่ได้ตั้งค่าการเชื่อมต่อระบบบัญชี');
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options.signal?.addEventListener('abort', abort);
+  if (options.signal?.aborted) controller.abort();
+  const timer = setTimeout(abort, 12000);
+  try {
   const response = await fetch(`${baseUrl}${path}`, {
     ...options,
+    signal: controller.signal,
     headers: {
       Accept: 'application/json',
       ...(options.body && !(options.body instanceof FormData) ? { 'Content-Type': 'application/json' } : {}),
@@ -35,7 +46,15 @@ export async function requestJson(path: string, options: RequestInit = {}, token
   });
   if (response.status === 401 && token) unauthorizedListeners.forEach(listener => listener(token));
   if (!response.ok) throw new ApiError(response.status, `เซิร์ฟเวอร์ตอบกลับ ${response.status}`);
-  return response.json();
+  return await response.json();
+  } catch (error) {
+    if (controller.signal.aborted && !options.signal?.aborted) throw new ApiConnectionError('เชื่อมต่อเกินเวลา กรุณาตรวจว่า API ยังเปิดอยู่และใช้ Wi-Fi เดียวกัน');
+    if (error instanceof TypeError) throw new ApiConnectionError('ติดต่อระบบบัญชีไม่ได้ กรุณาเปิด API และเชื่อมต่อ Wi-Fi เดียวกับคอมพิวเตอร์');
+    throw error;
+  } finally {
+    clearTimeout(timer);
+    options.signal?.removeEventListener('abort', abort);
+  }
 }
 
 export function parseEvents(payload: unknown): CampusEvent[] {

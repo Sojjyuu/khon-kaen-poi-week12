@@ -1,18 +1,20 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import { AppState } from 'react-native';
-import { setAccountScope } from '../../storage/accountScope';
+import { Alert, AppState } from 'react-native';
+import { prepareAccountChange, setAccountScope } from '../../storage/accountScope';
 import { ApiError, onUnauthorized, requestJson } from '../../services/campusApi';
 
-const KEY = 'khonkaen/session-token';
-type User = { id: string; name: string; email?: string };
+export class SessionStorageError extends Error {}
+
+const KEY = 'khonkaen.session-token';
+type User = { id: string; name: string; email?: string; bio?: string; photo?: string | null };
 type Session = { status: 'loading' | 'anonymous' } | { status: 'authenticated'; token: string; user: User };
 type SessionContext = {
   session: Session;
   login(email: string, password: string): Promise<void>;
   signup(name: string, email: string, password: string): Promise<void>;
   logout(): Promise<void>;
-  updateProfile(name: string): Promise<void>;
+  updateProfile(name: string, bio?: string, photo?: string | null): Promise<void>;
 };
 const Context = createContext<SessionContext | null>(null);
 
@@ -36,12 +38,14 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     (async () => {
       try {
         const token = await SecureStore.getItemAsync(KEY);
-        if (!token) { if (active) publish({ status: 'anonymous' }); return; }
+        if (!token) { await prepareAccountChange(null); if (active) publish({ status: 'anonymous' }); return; }
         const user = await requestJson('/auth/me', { signal: controller.signal }, token);
         if (!isUser(user)) throw new Error('ข้อมูลผู้ใช้ไม่ถูกต้อง');
+        await prepareAccountChange(user.id);
         if (active) publish({ status: 'authenticated', token, user });
       } catch (error) {
         if (error instanceof ApiError && [401, 403].includes(error.status)) await SecureStore.deleteItemAsync(KEY).catch(() => undefined);
+        await prepareAccountChange(null).catch(() => Alert.alert('ยกเลิกการเตือนไม่สำเร็จ', 'กรุณาเปิดแอปใหม่เพื่อลองอีกครั้ง'));
         if (active) publish({ status: 'anonymous' });
       } finally { clearTimeout(timer); }
     })();
@@ -52,12 +56,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!result || typeof result !== 'object') throw new Error('ข้อมูลเข้าสู่ระบบไม่ถูกต้อง');
     const { accessToken, user } = result as { accessToken?: unknown; user?: unknown };
     if (typeof accessToken !== 'string' || !isUser(user)) throw new Error('ข้อมูลเข้าสู่ระบบไม่ถูกต้อง');
-    await SecureStore.setItemAsync(KEY, accessToken);
+    await prepareAccountChange(user.id);
+    try { await SecureStore.setItemAsync(KEY, accessToken); }
+    catch { throw new SessionStorageError('ไม่สามารถบันทึกสถานะเข้าสู่ระบบบนเครื่องนี้'); }
     publish({ status: 'authenticated', token: accessToken, user });
   }, [publish]);
   const login = useCallback((email: string, password: string) => authenticate('/auth/login', { email, password }), [authenticate]);
   const signup = useCallback((name: string, email: string, password: string) => authenticate('/auth/register', { name, email, password }), [authenticate]);
   const logout = useCallback(async () => {
+    await prepareAccountChange(null);
     await SecureStore.deleteItemAsync(KEY);
     const token = session.status === 'authenticated' ? session.token : undefined;
     publish({ status: 'anonymous' });
@@ -73,6 +80,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (session.status !== 'authenticated') return;
     const unsubscribe = onUnauthorized((token) => {
       if (token !== session.token) return;
+      void prepareAccountChange(null).catch(() => Alert.alert('ยกเลิกการเตือนไม่สำเร็จ', 'กรุณาเปิดแอปใหม่เพื่อลองอีกครั้ง'));
       publish({ status: 'anonymous' });
       void SecureStore.deleteItemAsync(KEY).catch(() => undefined);
     });
@@ -81,9 +89,9 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     });
     return () => { unsubscribe(); subscription.remove(); };
   }, [session, publish]);
-  const updateProfile = useCallback(async (name: string) => {
+  const updateProfile = useCallback(async (name: string, bio?: string, photo?: string | null) => {
     if (session.status !== 'authenticated') throw new Error('กรุณาเข้าสู่ระบบ');
-    const user = await requestJson('/auth/profile', { method: 'POST', body: JSON.stringify({ name }) }, session.token);
+    const user = await requestJson('/auth/profile', { method: 'POST', body: JSON.stringify({ name, bio, photo }) }, session.token);
     if (!isUser(user)) throw new Error('ข้อมูลผู้ใช้ไม่ถูกต้อง');
     if (currentToken.current === session.token) publish({ ...session, user });
   }, [session, publish]);

@@ -2,7 +2,7 @@
 const http = require('node:http');
 const { randomBytes, timingSafeEqual, scryptSync } = require('node:crypto');
 
-const fs = require('node:fs');
+const { openAccountStore } = require('../server/account-store.cjs');
 const path = require('node:path');
 const { createHash } = require('node:crypto');
 const dataFile = process.env.CAMPUS_DATA_FILE || path.join(__dirname, '../.local-data/accounts.json');
@@ -12,23 +12,21 @@ const tokenKey = (token) => createHash('sha256').update(token).digest('hex');
 
 const email = process.env.CAMPUS_TEST_EMAIL;
 const password = process.env.CAMPUS_TEST_PASSWORD;
-if (!email || !password) {
-  console.error('Set CAMPUS_TEST_EMAIL and CAMPUS_TEST_PASSWORD for a disposable test account.');
+if (Boolean(email) !== Boolean(password)) {
+  console.error('Set both CAMPUS_TEST_EMAIL and CAMPUS_TEST_PASSWORD, or neither to use signup.');
   process.exit(1);
 }
-let saved = { accounts: [], sessions: [], registrations: [] };
-if (fs.existsSync(dataFile)) saved = JSON.parse(fs.readFileSync(dataFile, 'utf8'));
+const databaseFile = process.env.CAMPUS_DATABASE_FILE || `${dataFile.replace(/\.json$/, '')}.sqlite`;
+const storage = openAccountStore(databaseFile, dataFile);
+const saved = storage.load();
 const accounts = new Map(saved.accounts.map(([key, value]) => [key, { ...value, hash: Buffer.from(value.hash, 'hex') }]));
 const sessions = new Map(saved.sessions);
 const registrations = new Map(saved.registrations);
 function persist() {
-  fs.mkdirSync(path.dirname(dataFile), { recursive: true, mode: 0o700 });
-  const snapshot = {
+  storage.save({
     accounts: [...accounts].map(([key, value]) => [key, { ...value, hash: value.hash.toString('hex') }]),
     sessions: [...sessions], registrations: [...registrations],
-  };
-  fs.writeFileSync(`${dataFile}.tmp`, JSON.stringify(snapshot), { mode: 0o600 });
-  fs.renameSync(`${dataFile}.tmp`, dataFile);
+  });
 }
 function addAccount(name, email, password, id = randomBytes(12).toString('hex')) {
   const salt = randomBytes(16).toString('hex');
@@ -42,7 +40,7 @@ function issueSession(account) {
   persist();
   return { accessToken, user: account.user };
 }
-if (!accounts.has(email.trim().toLowerCase())) {
+if (email && !accounts.has(email.trim().toLowerCase())) {
   addAccount('ผู้ทดสอบ', email, password, accounts.size === 0 ? 'tester' : randomBytes(12).toString('hex'));
   persist();
 }
@@ -64,9 +62,27 @@ async function readBody(req, maxBytes) {
   return Buffer.concat(chunks);
 }
 
+function validPhoto(photo, max) {
+  if (photo === null) return true;
+  if (typeof photo !== 'string' || photo.length > Math.ceil(max * 4 / 3) + 32) return false;
+  const match = /^data:image\/(jpeg|png);base64,([A-Za-z0-9+/]+={0,2})$/.exec(photo);
+  if (!match) return false;
+  const bytes = Buffer.from(match[2], 'base64');
+  if (bytes.length > max || bytes.length < 8) return false;
+  return match[1] === 'png' ? bytes.subarray(0, 8).equals(Buffer.from('89504e470d0a1a0a', 'hex'))
+    : bytes[0] === 255 && bytes[1] === 216 && bytes[2] === 255 && bytes.at(-2) === 255 && bytes.at(-1) === 217;
+}
+function validJourney(body) {
+  return typeof body.title === 'string' && body.title.trim().length > 0 && body.title.length <= 100 &&
+    typeof body.note === 'string' && body.note.length <= 4000 && typeof body.date === 'string' &&
+    /^\d{4}-\d{2}-\d{2}$/.test(body.date) && Number.isFinite(Date.parse(body.date)) && new Date(body.date).toISOString().slice(0, 10) === body.date &&
+    Array.isArray(body.poiIds) && body.poiIds.length <= 100 && body.poiIds.every(id => typeof id === 'string' && /^[a-z0-9-]{1,80}$/.test(id)) && validPhoto(body.photo, 2_000_000);
+}
+
 const server = http.createServer(async (req, res) => {
   try {
     const path = new URL(req.url, 'http://localhost').pathname;
+    if (req.method === 'GET' && path === '/health') return json(res, 200, { ok: true });
     if (req.method === 'GET' && path === '/events') return json(res, 200, events);
     const eventId = path.match(/^\/events\/([\w-]+)$/)?.[1];
     if (req.method === 'GET' && eventId) {
@@ -100,8 +116,8 @@ const server = http.createServer(async (req, res) => {
       return json(res, 200, { photoId: `photo-${randomBytes(6).toString('hex')}` });
     }
     let body = {};
-    if (req.method === 'POST') {
-      const raw = await readBody(req, 8_192);
+    if (req.method === 'POST' || req.method === 'PUT') {
+      const raw = await readBody(req, 3_000_000);
       if (!raw) return json(res, 413, { error: 'too-large' });
       try { body = JSON.parse(raw.toString('utf8')); } catch { return json(res, 400, { error: 'invalid-json' }); }
     }
@@ -128,9 +144,24 @@ const server = http.createServer(async (req, res) => {
     }
     if (req.method === 'POST' && path === '/auth/profile') {
       if (typeof body.name !== 'string' || !body.name.trim() || body.name.trim().length > 80) return json(res, 400, { error: 'invalid-name' });
-      user.name = body.name.trim(); persist(); return json(res, 200, user);
+      if (body.bio !== undefined && (typeof body.bio !== 'string' || body.bio.length > 300)) return json(res, 400, { error: 'invalid-bio' });
+      if (body.photo !== undefined && !validPhoto(body.photo, 500_000)) return json(res, 400, { error: 'invalid-photo' });
+      user.name = body.name.trim();
+      if (body.bio !== undefined) user.bio = body.bio.trim();
+      if (body.photo !== undefined) user.photo = body.photo;
+      persist(); return json(res, 200, user);
     }
     if (req.method === 'GET' && path === '/auth/me') return json(res, 200, user);
+    if (req.method === 'GET' && path === '/journeys') return json(res, 200, storage.listJourneys(user.id));
+    const journeyId = path.match(/^\/journeys\/([a-zA-Z0-9-]{1,80})$/)?.[1];
+    if (journeyId && req.method === 'PUT') {
+      if (!validJourney(body)) return json(res, 400, { error: 'invalid-journey' });
+      const trip = { id: journeyId, title: body.title.trim(), note: body.note.trim(), date: body.date, photo: body.photo, poiIds: [...new Set(body.poiIds)] };
+      storage.saveJourney(user.id, trip); return json(res, 200, trip);
+    }
+    if (journeyId && req.method === 'DELETE') {
+      storage.deleteJourney(user.id, journeyId); return json(res, 200, { ok: true });
+    }
     const registrationId = path.match(/^\/events\/([\w-]+)\/registrations$/)?.[1];
     if (req.method === 'POST' && registrationId) {
       if (!events.some((item) => item.id === registrationId)) return json(res, 404, { error: 'not-found' });
@@ -142,6 +173,11 @@ const server = http.createServer(async (req, res) => {
     }
     return json(res, 404, { error: 'not-found' });
   } catch { return json(res, 500, { error: 'internal' }); }
+});
+server.on('close', () => storage.close());
+server.on('error', error => {
+  console.error(error.code === 'EADDRINUSE' ? `API port ${port} is busy. Stop the previous API before npm start.` : 'API could not start. Check database path and permissions.');
+  storage.close(); process.exit(1);
 });
 server.listen(port, '0.0.0.0', () => {
   const address = server.address();

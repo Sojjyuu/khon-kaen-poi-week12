@@ -3,8 +3,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, TextInput, View } fro
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Action, eventStyles as styles } from '../../components/EventUI';
-import { ApiError, hasCampusApi } from '../../services/campusApi';
-import { useSession } from './session';
+import { ApiConnectionError, ApiError, hasCampusApi } from '../../services/campusApi';
+import { SessionStorageError, useSession } from './session';
 
 export function AccountForm({ mode }: { mode: 'login' | 'signup' }) {
   const creating = mode === 'signup';
@@ -29,7 +29,7 @@ export function AccountForm({ mode }: { mode: 'login' | 'signup' }) {
       setPassword(''); setConfirmation('');
       router.replace('/events');
     } catch (cause) {
-      setError(cause instanceof ApiError && cause.status === 409 ? 'อีเมลนี้สมัครแล้ว ลองเข้าสู่ระบบได้เลย' : cause instanceof ApiError && cause.status === 401 ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : 'เชื่อมต่อระบบบัญชีไม่สำเร็จ กรุณาลองอีกครั้ง');
+      setError(cause instanceof SessionStorageError ? 'ระบบยืนยันบัญชีแล้ว แต่บันทึกการเข้าสู่ระบบบนเครื่องไม่ได้ กรุณาลองเข้าสู่ระบบอีกครั้ง' : cause instanceof ApiError && cause.status === 409 ? 'อีเมลนี้สมัครแล้ว ลองเข้าสู่ระบบได้เลย' : cause instanceof ApiError && cause.status === 401 ? 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' : cause instanceof ApiConnectionError ? cause.message : 'เชื่อมต่อระบบบัญชีไม่สำเร็จ กรุณาลองอีกครั้ง');
     } finally { submitting.current = false; setBusy(false); }
   };
   return <SafeAreaView style={{ flex: 1 }} edges={['left', 'right', 'bottom']}>

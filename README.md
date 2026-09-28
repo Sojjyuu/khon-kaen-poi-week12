@@ -2,7 +2,7 @@
 
 ชุดนี้อยู่บน branch `course-gaps-integration` เพิ่มสถานที่เป็น 28 แห่ง และหน้าเข้าสู่ระบบ/สมัครสมาชิกผ่านแท็บโปรไฟล์
 
-[วิธีเปิด API และทดสอบ Login/สมัครสมาชิก](docs/accounts-setup.md) — ระบบบัญชีต้องเปิด API แยกจาก Expo
+[วิธีเปิด API และทดสอบ Login/สมัครสมาชิก](docs/accounts-setup.md) — เปิด API + Expo พร้อมกันด้วย `npm start` (Node.js 22.13+)
 
 # Khon Kaen Dino Explorer — Week 13
 
@@ -80,7 +80,7 @@ Profiler รอบล่าสุดที่ผู้ทดสอบส่ง�
 npm ci
 npm test
 npm run typecheck
-npx expo start -c
+npm start -- --clear
 ```
 
 Android Expo Go ใช้ Leaflet/OpenStreetMap ผ่าน WebView และต้องเชื่อมต่ออินเทอร์เน็ต ส่วน iPhone ใช้แผนที่ native; ฟิลเตอร์กล้องใช้หลังถ่าย ก่อนบันทึกภาพลงเครื่อง
@@ -131,6 +131,6 @@ https://github.com/Sojjyuu/khon-kaen-poi-week12
 
 ชุดปรับปรุงนี้ใช้ branch `course-gaps-integration` และไม่อัปโหลด `node_modules`, `.expo`, `.env` หรือ secret/API key
 
-### บัญชีและโปรไฟล์ (26 ก.ย. 2026)
+### บัญชี โปรไฟล์ และทริป (28 ก.ย. 2026)
 
-โปรไฟล์ผู้ใช้แยกจากหน้าเกี่ยวกับผู้พัฒนา (`/about`) แก้ชื่อและออกจากระบบได้ บัญชีและ session เก็บถาวรในไฟล์บนเครื่อง API ส่วน My Trip/รายการโปรด/กิจกรรมส่วนตัวแยกตามบัญชีบนโทรศัพท์ โปรดอ่าน [การตั้งค่าและขอบเขต](docs/accounts-setup.md) ก่อนทดสอบ ไม่มีการซิงก์ทริปข้ามเครื่อง
+แก้ SecureStore login, เปิด API + Expo ด้วย `npm start`, ย้ายบัญชีเดิมเข้า SQLite และเพิ่มรูป/แนะนำตัวในโปรไฟล์ มีบันทึกการเดินทางผ่าน API พร้อมชื่อ วัน โน้ต รูป และสถานที่หลายแห่ง การแจ้งเตือนแยกตามบัญชีและยกเลิกเมื่อออกจากระบบ ดู [วิธีตั้งค่าและขอบเขต](docs/accounts-setup.md)

@@ -29,7 +29,7 @@ it('restores the account, updates the display name and clears local identity on 
   await fireEvent.press(screen.getByLabelText('logout'));
   await waitFor(() => expect(screen.getByText('anonymous')).toBeTruthy());
   expect(getAccountScope()).toBeNull();
-  expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('khonkaen/session-token');
+  expect(SecureStore.deleteItemAsync).toHaveBeenCalledWith('khonkaen.session-token');
   expect(requestJson).toHaveBeenCalledWith('/auth/logout', expect.objectContaining({ method: 'POST' }), 'saved-token');
 });
 it('expired session returns to anonymous even if secure storage deletion fails', async () => {

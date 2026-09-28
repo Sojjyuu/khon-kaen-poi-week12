@@ -46,12 +46,16 @@
     "test:unit": "jest --runInBand",
     "api:mock": "node scripts/mock-campus-api.cjs",
     "lint": "expo lint",
-    "start": "expo start",
+    "start": "node scripts/start-dev.cjs",
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && expo config --type public"
+    "check": "npm run typecheck && expo config --type public",
+    "start:expo": "expo start --go --lan"
   },
-  "private": true
+  "private": true,
+  "engines": {
+    "node": ">=22.13.0"
+  }
 }

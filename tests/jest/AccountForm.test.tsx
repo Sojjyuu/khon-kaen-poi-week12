@@ -31,7 +31,7 @@ it('blocks mismatched passwords, then signs up and securely stores the session',
   jest.mocked(requestJson).mockResolvedValue({ accessToken: 'test-token', user: { id: 'one', name: 'Explorer' } });
   await fireEvent.changeText(screen.getByLabelText('ยืนยันรหัสผ่าน'), 'temporary-secret');
   await fireEvent.press(screen.getByRole('button', { name: 'สมัครสมาชิก' }));
-  await waitFor(() => expect(SecureStore.setItemAsync).toHaveBeenCalledWith('khonkaen/session-token', 'test-token'));
+  await waitFor(() => expect(SecureStore.setItemAsync).toHaveBeenCalledWith('khonkaen.session-token', 'test-token'));
   expect(requestJson).toHaveBeenCalledWith('/auth/register', { method: 'POST', body: JSON.stringify({ name: 'Explorer', email: 'new@example.test', password: 'temporary-secret' }) });
   expect(router.replace).toHaveBeenCalledWith('/events');
 });

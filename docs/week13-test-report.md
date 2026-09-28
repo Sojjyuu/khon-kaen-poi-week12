@@ -75,3 +75,29 @@ npx eas-cli@latest build --platform android --profile preview
 - Manual verification still needed: phone keyboard/font scale, profile edit, switching accounts, force-close/reopen with API running.
 - Boundaries: single-process local API file persistence, device-local trip/favorites/events without cloud sync, existing device notifications not automatically canceled on logout, legacy unowned data not automatically assigned to a user. See `accounts-setup.md`.
 - Expo Doctor dependency patch mismatches noted in earlier reports were not changed by this task.
+
+## Regression fix: signup succeeds at API but session cannot be saved
+
+- Root cause: SecureStore key `khonkaen/session-token` contains `/`, rejected by the installed SDK's real JS validator before native storage is called.
+- Changed all session operations to `khonkaen.session-token`; no old-key migration is attempted because the old key was invalid.
+- Separated device session-storage failure from generic network errors in the account form.
+- Added `secureSession.test.tsx` using actual Expo SecureStore JS validation and mocking only the native device module. The earlier full SecureStore mocks did not cover this constraint.
+- Typecheck and lint passed; all 21 Jest tests passed. No server behavior changed.
+- A user whose signup reached the API should log in with that same account after updating; do not delete account data or create duplicate accounts.
+
+
+## Account and journey update — 2026-09-28
+
+- `npm run typecheck`: PASS.
+- `npm run lint`: PASS, no errors/warnings.
+- `npm test`: PASS, 20 Node tests + 25 Jest tests (10 Jest suites).
+- `CI=1 EXPO_OFFLINE=1 npx expo export --platform ios --platform android --output-dir /tmp/poi-account-export`: PASS both bundles. This is a JS/assets export, not an installed native build.
+- Launcher smoke: start `scripts/start-dev.cjs`, poll API `/health` and Metro `/status`, send Ctrl+C; both servers ready and both ports closed after shutdown. Tested on Linux Node 24.19; Windows/phone confirmation remains manual.
+
+Regression: signup previously reached the API but SecureStore rejected the key containing `/`. Key now uses a dot. Test retains real SecureStore JavaScript validation and mocks only the native storage boundary.
+
+Persistence/integration: import legacy JSON once into SQLite while preserving IDs and hashes; reject corrupt import without overwriting; unseeded signup; profile bio/photo and trips persist after server restart; invalid trip date/photo rejected; another account cannot read, replace, or delete the first account's trip. Password plaintext/raw session tokens are absent from database rows.
+
+UI: new journey form validates before sending, keeps the draft when API fails, and submits with the current account's token. Notifications: owner-scoped payload/identifier; logout cancels reminders while preserving unrelated notifications; queued old-account work rejected; another account's notification tap ignored.
+
+Phone checks still required: iOS/Android photo picker (cancel/oversized photo), native SecureStore end-to-end signup, safe-area/font size on new screens, notification delivery and dismissal after logout. No device test or Preview Build claimed in this run. Expo Doctor was not rerun in this change; see previous baseline findings. API remains local classroom service, not public production hosting.

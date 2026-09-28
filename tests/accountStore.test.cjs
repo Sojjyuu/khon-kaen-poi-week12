@@ -1,0 +1,35 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const fs = require('node:fs');
+const os = require('node:os');
+const path = require('node:path');
+const { scryptSync } = require('node:crypto');
+const { openAccountStore } = require('../server/account-store.cjs');
+test('migrates legacy accounts with the same IDs and password hashes only once', t => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'poi-migration-'));
+  t.after(() => fs.rmSync(folder, { recursive: true, force: true }));
+  const legacy = path.join(folder, 'accounts.json');
+  const file = path.join(folder, 'accounts.sqlite');
+  const saved = { accounts: [['test@example.test', { user: { id: 'existing-id', name: 'Existing' }, salt: 'test-salt', hash: scryptSync('test-password', 'test-salt', 64).toString('hex') }]], sessions: [['digest', { userId: 'existing-id', expiresAt: 9000000000000 }]], registrations: [['existing-id/api-event-1', 'reg-123']] };
+  fs.writeFileSync(legacy, JSON.stringify(saved));
+  let store = openAccountStore(file, legacy);
+  assert.deepEqual(store.load(), saved);
+  const updated = { ...saved, sessions: [], registrations: [] };
+  store.save(updated); store.close();
+  store = openAccountStore(file, legacy);
+  assert.deepEqual(store.load(), updated);
+  store.close();
+  assert.deepEqual(JSON.parse(fs.readFileSync(legacy)), saved);
+});
+test('invalid legacy data is preserved and import can retry after correction', t => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'poi-migration-bad-'));
+  t.after(() => fs.rmSync(folder, { recursive: true, force: true }));
+  const legacy = path.join(folder, 'accounts.json');
+  const file = path.join(folder, 'accounts.sqlite');
+  fs.writeFileSync(legacy, '{broken');
+  assert.throws(() => openAccountStore(file, legacy));
+  assert.equal(fs.readFileSync(legacy, 'utf8'), '{broken');
+  fs.writeFileSync(legacy, JSON.stringify({ accounts: [], sessions: [], registrations: [] }));
+  const store = openAccountStore(file, legacy);
+  assert.deepEqual(store.load().accounts, []); store.close();
+});

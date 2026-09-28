@@ -1,3 +1,4 @@
+import { getAccountScope } from '../storage/accountScope';
 import { isEventId } from '../features/events/types';
 import {
   notificationService,
@@ -16,7 +17,7 @@ export type ReminderSnapshot = {
 type EventRepositoryLike = Pick<typeof eventRepository, 'findById'>;
 
 function validResponse(data: NotificationResponseData | null): string | null {
-  if (!data?.isDefaultAction || !isEventId(data.eventId)) return null;
+  if (!getAccountScope() || data?.ownerId !== getAccountScope() || !data?.isDefaultAction || !isEventId(data.eventId)) return null;
   return data.eventId;
 }
 
@@ -47,7 +48,9 @@ export function createReminderRepository(
     },
 
     schedule(eventId: string, test = false): Promise<string> {
+      const ownerId = getAccountScope();
       return serial(async () => {
+        if (!ownerId) throw new Error('กรุณาเข้าสู่ระบบก่อนตั้งการแจ้งเตือน');
         const event = await events.findById(eventId);
         if (!event) throw new Error('ไม่พบกิจกรรมนี้');
         if (!test && Date.parse(event.startsAt) - 1_800_000 <= Date.now()) {
@@ -63,8 +66,9 @@ export function createReminderRepository(
           : new Date(Date.parse(event.startsAt) - 1_800_000);
         if (date.getTime() <= Date.now()) throw new Error('เลยเวลาเตือนแล้ว');
         return device.schedule({
-          identifier: `event-reminder:${event.id}:${test ? 'test' : 'main'}`,
+          identifier: `event-reminder:${encodeURIComponent(ownerId)}:${event.id}:${test ? 'test' : 'main'}`,
           eventId: event.id,
+          ownerId,
           date,
           test,
         });
@@ -72,7 +76,9 @@ export function createReminderRepository(
     },
 
     cancel(eventId: string): Promise<void> {
+      const owner = getAccountScope();
       return serial(async () => {
+        if (!owner || owner !== getAccountScope()) return;
         const reminders = await device.list(eventId);
         for (const reminder of reminders) {
           await device.cancel(reminder.identifier);

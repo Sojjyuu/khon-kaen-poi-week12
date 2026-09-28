@@ -50,7 +50,7 @@ test('signup validates fields, normalizes email, rejects duplicates and restores
   const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'poi-api-'));
   t.after(() => fs.rmSync(folder, { recursive: true, force: true }));
   const server = fork(path.join(__dirname, '../scripts/mock-campus-api.cjs'), {
-    env: { ...process.env, CAMPUS_DATA_FILE: path.join(folder, 'accounts.json'), PORT: '0', CAMPUS_TEST_EMAIL: 'seed@example.test', CAMPUS_TEST_PASSWORD: 'disposable-only' },
+    env: { ...process.env, CAMPUS_DATA_FILE: path.join(folder, 'accounts.json'), PORT: '0', CAMPUS_TEST_EMAIL: '', CAMPUS_TEST_PASSWORD: '' },
     stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
   });
   t.after(() => server.kill());
@@ -85,7 +85,7 @@ test('accounts, profile, registration and sessions survive restart; logout and e
   t.after(() => { server?.kill(); fs.rmSync(folder, { recursive: true, force: true }); });
   async function start() {
     server = fork(path.join(__dirname, '../scripts/mock-campus-api.cjs'), {
-      env: { ...process.env, PORT: '0', CAMPUS_DATA_FILE: dataFile, CAMPUS_TEST_EMAIL: 'seed@example.test', CAMPUS_TEST_PASSWORD: 'disposable-only' },
+      env: { ...process.env, PORT: '0', CAMPUS_DATA_FILE: dataFile, CAMPUS_TEST_EMAIL: '', CAMPUS_TEST_PASSWORD: '' },
       stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
     });
     const { port } = await new Promise((resolve, reject) => {
@@ -99,11 +99,31 @@ test('accounts, profile, registration and sessions survive restart; logout and e
   const post = (route, body, token) => fetch(`${url}${route}`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: JSON.stringify(body) });
   const credentials = { name: 'Alice', email: 'alice@example.test', password: 'test-only-secret' };
   const alice = await (await post('/auth/register', credentials)).json();
-  assert.equal((await post('/auth/profile', { name: 'Updated Alice' }, alice.accessToken)).status, 200);
+  const photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  assert.equal((await post('/auth/profile', { name: 'Updated Alice', bio: 'เที่ยวขอนแก่น', photo }, alice.accessToken)).status, 200);
+  assert.equal((await post('/auth/profile', { name: 'Alice', photo: 'not-a-photo' }, alice.accessToken)).status, 400);
+  const trip = { title: 'ขอนแก่นหนึ่งวัน', date: '2026-09-28', note: 'ไปกับเพื่อน', photo, poiIds: ['kku'] };
+  const journey = (method, token, body) => fetch(`${url}/journeys/trip-one`, { method, headers: { Authorization: `Bearer ${token}` }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const list = token => fetch(`${url}/journeys`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+  assert.equal((await journey('PUT', alice.accessToken, { ...trip, date: '2026-02-30' })).status, 400);
+  assert.equal((await journey('PUT', alice.accessToken, trip)).status, 200);
+  const bob = await (await post('/auth/register', { name: 'Bob', email: 'bob@example.test', password: 'another-test-only' })).json();
+  assert.deepEqual(await list(bob.accessToken), []);
+  await journey('DELETE', bob.accessToken);
+  assert.equal((await list(alice.accessToken)).length, 1);
+  await journey('PUT', bob.accessToken, { ...trip, title: 'Bob own trip' });
+  assert.equal((await list(alice.accessToken))[0].title, trip.title);
+
   const registration = await (await post('/events/api-event-1/registrations', { fullName: 'Alice', email: credentials.email }, alice.accessToken)).json();
   await stop(); url = await start();
   const me = await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${alice.accessToken}` } }).then(r => r.json());
   assert.equal(me.name, 'Updated Alice');
+  assert.equal(me.bio, 'เที่ยวขอนแก่น');
+  assert.equal(me.photo, photo);
+  assert.equal((await list(alice.accessToken))[0].photo, photo);
+  await journey('DELETE', alice.accessToken);
+  assert.deepEqual(await list(alice.accessToken), []);
+  assert.equal((await list(bob.accessToken)).length, 1);
   const repeat = await (await post('/events/api-event-1/registrations', { fullName: 'Alice', email: credentials.email }, alice.accessToken)).json();
   assert.equal(repeat.registrationId, registration.registrationId);
   const restored = await (await post('/auth/login', credentials)).json();
@@ -111,12 +131,13 @@ test('accounts, profile, registration and sessions survive restart; logout and e
   assert.equal((await post('/auth/logout', {}, restored.accessToken)).status, 200);
   assert.equal((await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${restored.accessToken}` } })).status, 401);
   await stop();
-  const raw = fs.readFileSync(dataFile, 'utf8');
+  const { DatabaseSync } = require('node:sqlite');
+  const database = new DatabaseSync(dataFile.replace(/\.json$/, '.sqlite'));
+  const raw = JSON.stringify({ accounts: database.prepare('SELECT * FROM accounts').all(), sessions: database.prepare('SELECT * FROM sessions').all() });
   assert.equal(raw.includes(credentials.password), false);
   assert.equal(raw.includes(alice.accessToken), false);
-  const expired = JSON.parse(raw);
-  expired.sessions.forEach(([, session]) => { session.expiresAt = 0; });
-  fs.writeFileSync(dataFile, JSON.stringify(expired));
+  database.exec("UPDATE sessions SET data=json_set(data, '$.expiresAt', 0)");
+  database.close();
   url = await start();
   assert.equal((await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${alice.accessToken}` } })).status, 401);
 });
