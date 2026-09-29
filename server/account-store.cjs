@@ -47,6 +47,8 @@ function openAccountStore(filename, legacyFile) {
       registrations: db.prepare('SELECT * FROM registrations').all().map(row => [row.owner_event, row.id]),
     }),
     save,
+    getRegistrationEvent: (owner, id) => { const row = db.prepare('SELECT data FROM registration_events WHERE owner=? AND id=?').get(owner, id); return row ? JSON.parse(row.data) : null; },
+    deleteRegistrationEvent: (owner, id) => db.prepare('DELETE FROM registration_events WHERE owner=? AND id=?').run(owner, id),
     saveRegistrationEvent: (owner, event) => db.prepare('INSERT INTO registration_events VALUES (?,?,?) ON CONFLICT(owner,id) DO UPDATE SET data=excluded.data').run(owner, event.id, JSON.stringify(event)),
 
     listJourneys: owner => db.prepare("SELECT data FROM journeys WHERE owner=? ORDER BY json_extract(data, '$.date') DESC").all(owner).map(row => JSON.parse(row.data)),

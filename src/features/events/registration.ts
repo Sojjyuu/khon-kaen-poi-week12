@@ -1,5 +1,5 @@
 import type { CampusEvent } from './types';
-import { requestJson } from '../../services/campusApi';
+import { isCampusEvent, requestJson } from '../../services/campusApi';
 
 export function validateRegistration(fullName: string, email: string): string | null {
   if (!fullName.trim()) return 'กรุณากรอกชื่อ';
@@ -44,4 +44,16 @@ export async function uploadRegistrationPhoto(eventId: string, registrationId: s
   return requestJson(`/events/${encodeURIComponent(eventId)}/registrations/${encodeURIComponent(registrationId)}/photo`, {
     method: 'POST', body,
   }, token);
+}
+
+export type EventRegistration = { id: string; eventId: string; event: CampusEvent | null };
+export async function listRegistrations(token: string, signal?: AbortSignal): Promise<EventRegistration[]> {
+  const value = await requestJson('/registrations', { signal }, token);
+  if (!Array.isArray(value) || !value.every(item => item && typeof item.id === 'string' && typeof item.eventId === 'string' && (item.event === null || isCampusEvent(item.event)))) {
+    throw new Error('ข้อมูลการลงทะเบียนไม่ถูกต้อง');
+  }
+  return value;
+}
+export async function cancelRegistration(eventId: string, token: string) {
+  await requestJson(`/registrations/${encodeURIComponent(eventId)}`, { method: 'DELETE' }, token);
 }

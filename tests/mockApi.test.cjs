@@ -129,7 +129,22 @@ test('accounts, profile, registration and sessions survive restart; logout and e
   const customEvent = { ...localEvent, id: 'local-123-user', title: 'กิจกรรมที่สร้างเอง' };
   assert.equal((await post('/events/local-123-user/registrations', { ...fields, localEvent: customEvent }, alice.accessToken)).status, 200);
   assert.equal((await fetch(`${url}/events`).then(r => r.json())).length, 1);
+  const registeredList = token => fetch(`${url}/registrations`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+  assert.equal((await fetch(`${url}/registrations`)).status, 401);
+  assert.equal((await registeredList(alice.accessToken)).length, 3);
+  assert.equal((await registeredList(bob.accessToken)).length, 1);
+  await fetch(`${url}/registrations/local-123-user`, { method: 'DELETE', headers: { Authorization: `Bearer ${bob.accessToken}` } });
+  assert.equal((await registeredList(alice.accessToken)).length, 3);
   await stop(); url = await start();
+  const history = await registeredList(alice.accessToken);
+  assert.equal(history.length, 3);
+  assert.equal(history.find(item => item.eventId === 'local-123-user').event.title, customEvent.title);
+  await fetch(`${url}/registrations/local-123-user`, { method: 'DELETE', headers: { Authorization: `Bearer ${alice.accessToken}` } });
+  assert.equal((await registeredList(alice.accessToken)).length, 2);
+  assert.equal((await registeredList(bob.accessToken)).length, 1);
+  await stop(); url = await start();
+  assert.equal((await registeredList(alice.accessToken)).length, 2);
+
   assert.equal((await (await post(localRoute, fields, alice.accessToken)).json()).registrationId, localRegistration.registrationId);
   const me = await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${alice.accessToken}` } }).then(r => r.json());
   assert.equal(me.name, 'Updated Alice');

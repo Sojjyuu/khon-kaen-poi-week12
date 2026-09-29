@@ -36,13 +36,13 @@ Profiler รอบล่าสุดหลังรวมการแก้ Andr
 ## Fresh-clone check
 
 ```bash
-git clone https://github.com/Sojjyuu/khon-kaen-poi-week12.git
+git clone --branch course-gaps-integration https://github.com/Sojjyuu/khon-kaen-poi-week12.git
 cd khon-kaen-poi-week12
 npm ci
 npm test
 npm run typecheck
 npm run check
-npx expo start -c
+npm start -- --clear
 ```
 
 การทดสอบ Web export ของเวอร์ชันนี้ยังไม่ได้ยืนยัน โปรดทดสอบบนอุปกรณ์ Android/iOS อีกครั้งหลังรวมการแก้ Expo Go
@@ -55,7 +55,7 @@ http://localhost:8081/events/not-found-test
 
 ## ก่อนส่ง
 
-- ใช้ branch `main`
+- ใช้ branch `course-gaps-integration` สำหรับงานรวมล่าสุด
 - ใช้รายงาน `docs/lab-12-quality-audit.md` เป็นหลักฐาน Week 12
 - GitHub Actions ชื่อ **Week 12 Quality Check** ตรวจ test + TypeScript + Expo configuration
 - ไม่อัปโหลด secret, API key, `node_modules` หรือ `.expo`

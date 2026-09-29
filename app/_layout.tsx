@@ -63,6 +63,7 @@ function AppRoutes() {
         <Stack.Protected guard={session.status === 'authenticated'}>
           <Stack.Screen name="journeys" options={{ title: 'บันทึกการเดินทาง' }} />
           <Stack.Screen name="journey" options={{ title: 'ทริปของฉัน' }} />
+          <Stack.Screen name="registrations" options={{ title: 'กิจกรรมที่ลงทะเบียนแล้ว' }} />
           <Stack.Screen name="register" options={{ title: 'ลงทะเบียนเข้าร่วมกิจกรรม' }} />
         </Stack.Protected>
       </Stack>

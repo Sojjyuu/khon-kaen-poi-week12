@@ -117,3 +117,6 @@ Validation: TypeScript and lint pass; Node tests 20/20 and Jest tests 26/26 (11 
 - Failed requests retain the form and do not display success. Successful submission removes the submit button to prevent accidental repeated submission.
 - Verification: `npm run typecheck`, `npm run lint`, and `npm test` passed (20 Node tests + 27 Jest tests across 11 suites).
 - Device verification for this change is still pending; no new registered-events history page is included.
+
+## Registration history completion — 2026-09-29
+See `docs/registration-completion.md` for the bug report, regression coverage, 49 passing tests, 21/21 Doctor checks, Android/iOS bundle results, and outstanding native Preview installation evidence.

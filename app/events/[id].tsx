@@ -1,3 +1,4 @@
+import { useRegistrations } from '../../src/features/events/hooks/useRegistrations';
 import { CoverPhoto } from '../../src/components/CoverPhoto';
 import { useEffect, useRef, useState } from 'react';
 import {
@@ -26,6 +27,7 @@ import * as Location from 'expo-location';
 
 export default function EventDetail() {
   const { session } = useSession();
+  const registrations = useRegistrations();
   const { id } = useLocalSearchParams<{ id: string | string[] }>();
   const eventId = isEventId(id) ? id : null;
   const {
@@ -188,11 +190,15 @@ export default function EventDetail() {
             {event.venue ? <VenuePicker initial={event.venue} selected={event.venue} /> : poi && <PoiMap poi={poi} />}
             {hasCampusApi() && <View style={styles.card}>
               <Text accessibilityRole="header" style={styles.subtitle}>เข้าร่วมกิจกรรม</Text>
-              <Action title={session.status === 'authenticated' ? 'ลงทะเบียนเข้าร่วมกิจกรรม' : 'เข้าสู่ระบบเพื่อลงทะเบียน'}
+              {session.status === 'authenticated' && registrations.items.some(item => item.eventId === event.id) ? <>
+                <Text style={styles.text}>ลงทะเบียนแล้ว</Text>
+                <Action title="ดูการลงทะเบียนของฉัน" onPress={() => router.push('/registrations')} />
+              </> : <Action title={session.status === 'authenticated' ? 'ลงทะเบียนเข้าร่วมกิจกรรม' : 'เข้าสู่ระบบเพื่อลงทะเบียน'}
                 disabled={session.status === 'loading'}
                 onPress={() => session.status === 'authenticated'
                   ? router.push({ pathname: '/register', params: { id: event.id } })
-                  : router.push('/login')} />
+                  : router.push('/login')} />}
+              {!!registrations.error && <><Text style={styles.text}>ตรวจสอบสถานะการลงทะเบียนไม่ได้</Text><Action title="ตรวจสอบอีกครั้ง" onPress={registrations.refresh} /></>}
             </View>}
             <View style={styles.card}>
               <Text accessibilityRole="header" style={styles.subtitle}>ตำแหน่งปัจจุบัน</Text>

@@ -162,6 +162,20 @@ const server = http.createServer(async (req, res) => {
       if (body.photo !== undefined) user.photo = body.photo;
       persist(); return json(res, 200, user);
     }
+    if (req.method === 'GET' && path === '/registrations') {
+      const prefix = `${user.id}/`;
+      return json(res, 200, [...registrations].filter(([key]) => key.startsWith(prefix)).map(([key, id]) => {
+        const eventId = key.slice(prefix.length);
+        return { id, eventId, event: storage.getRegistrationEvent(user.id, eventId) || events.find(event => event.id === eventId) || null };
+      }));
+    }
+    const canceledEventId = path.match(/^\/registrations\/([\w-]{1,80})$/)?.[1];
+    if (req.method === 'DELETE' && canceledEventId) {
+      registrations.delete(`${user.id}/${canceledEventId}`);
+      persist();
+      storage.deleteRegistrationEvent(user.id, canceledEventId);
+      return json(res, 200, { ok: true });
+    }
     if (req.method === 'GET' && path === '/auth/me') return json(res, 200, user);
     if (req.method === 'GET' && path === '/journeys') return json(res, 200, storage.listJourneys(user.id));
     const journeyId = path.match(/^\/journeys\/([a-zA-Z0-9-]{1,80})$/)?.[1];

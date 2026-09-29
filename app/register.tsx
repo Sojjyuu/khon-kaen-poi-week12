@@ -97,6 +97,7 @@ export default function Register() {
       <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={styles.title}>ลงทะเบียนเข้าร่วมสำเร็จแล้ว</Text>
       <Text style={styles.text}>ระบบได้รับข้อมูลการเข้าร่วมกิจกรรมของคุณแล้ว</Text>
       <Text style={styles.text}>หากต้องการเก็บกิจกรรมไว้ดูภายหลัง ให้กดเพิ่มในรายการโปรดที่หน้ารายการกิจกรรม</Text>
+      <Action title="ดูกิจกรรมที่ลงทะเบียนแล้ว" onPress={() => router.replace('/registrations')} />
       <Action title="กลับไปดูกิจกรรมนี้" onPress={() => router.replace({ pathname: '/events/[id]', params: { id: eventId } })} />
     </ScrollView>
   </SafeAreaView>;

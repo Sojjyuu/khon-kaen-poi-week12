@@ -52,6 +52,7 @@ export default function ProfileScreen() {
             <Text accessibilityRole="header" style={eventStyles.subtitle}>การสำรวจของฉัน</Text>
             <Action title="ทริปของฉัน" onPress={() => router.push('/trip')} />
             <Action title="บันทึกการเดินทาง" onPress={() => router.push('/journeys')} />
+            <Action title="กิจกรรมที่ลงทะเบียนแล้ว" onPress={() => router.push('/registrations')} />
             <Action title="กิจกรรมโปรด" variant="secondary" onPress={() => router.push('/favorites')} />
             <Text style={eventStyles.text}>บันทึกการเดินทางเก็บกับบัญชีผ่านเซิร์ฟเวอร์ ส่วนสถานที่ที่อยากไปและกิจกรรมส่วนตัวเก็บบนเครื่องนี้</Text>
           </View>
