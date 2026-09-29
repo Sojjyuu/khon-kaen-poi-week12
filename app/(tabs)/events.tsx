@@ -184,7 +184,7 @@ export default function Events() {
                 {offline && <Text accessibilityRole="alert" style={styles.error}>
                   ออฟไลน์: แสดงข้อมูลที่บันทึกไว้ล่าสุด {updatedAt ? new Date(updatedAt).toLocaleString('th-TH') : ''}
                 </Text>}
-                <Action title="ดูกิจกรรมที่บันทึก" onPress={() => router.push('/favorites')} />
+                <Action title="ดูกิจกรรมโปรด" onPress={() => router.push('/favorites')} />
 
                 {!!error && (
                   <View

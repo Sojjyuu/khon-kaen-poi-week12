@@ -14,8 +14,8 @@ export default function Favorites() {
       contentContainerStyle={styles.content}
       data={events.filter((event) => ids.includes(event.id))}
       keyExtractor={(item) => item.id}
-      ListHeaderComponent={<Text accessibilityRole="header" style={styles.title}>กิจกรรมที่บันทึก</Text>}
-      ListEmptyComponent={<><Text style={styles.text}>{ready ? 'ยังไม่มีกิจกรรมที่บันทึก' : 'กำลังอ่านรายการโปรด…'}</Text><Action title="กลับไปเลือกกิจกรรม" onPress={() => router.push('/events')} /></>}
+      ListHeaderComponent={<Text accessibilityRole="header" style={styles.title}>กิจกรรมโปรด</Text>}
+      ListEmptyComponent={<><Text style={styles.text}>{ready ? 'ยังไม่มีกิจกรรมโปรด' : 'กำลังอ่านรายการโปรด…'}</Text><Action title="กลับไปเลือกกิจกรรม" onPress={() => router.push('/events')} /></>}
       renderItem={({ item }) => <EventCard event={item} isFavorite onToggleFavorite={(id) => { void toggle(id); }}
         onOpen={(id) => router.push({ pathname: '/events/[id]', params: { id } })}
         onDelete={() => router.push({ pathname: '/events/[id]', params: { id: item.id } })} />}

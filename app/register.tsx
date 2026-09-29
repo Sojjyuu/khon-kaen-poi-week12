@@ -17,6 +17,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [success, setSuccess] = useState(false);
   const [photo, setPhoto] = useState<PhotoDraft | null>(null);
   const [permissionBlocked, setPermissionBlocked] = useState(false);
   const submitting = useRef(false);
@@ -75,7 +76,7 @@ export default function Register() {
         if (typeof registrationId !== 'string') throw new Error('missing-registration-id');
         await uploadRegistrationPhoto(eventId, registrationId, photo, session.token);
       }
-      router.replace({ pathname: '/events/[id]', params: { id: eventId } });
+      setSuccess(true);
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) {
         await logout();
@@ -91,10 +92,18 @@ export default function Register() {
     }
     finally { submitting.current = false; setBusy(false); }
   };
+  if (success && eventId) return <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
+    <ScrollView contentContainerStyle={styles.content}>
+      <Text accessibilityRole="header" accessibilityLiveRegion="polite" style={styles.title}>ลงทะเบียนเข้าร่วมสำเร็จแล้ว</Text>
+      <Text style={styles.text}>ระบบได้รับข้อมูลการเข้าร่วมกิจกรรมของคุณแล้ว</Text>
+      <Text style={styles.text}>หากต้องการเก็บกิจกรรมไว้ดูภายหลัง ให้กดเพิ่มในรายการโปรดที่หน้ารายการกิจกรรม</Text>
+      <Action title="กลับไปดูกิจกรรมนี้" onPress={() => router.replace({ pathname: '/events/[id]', params: { id: eventId } })} />
+    </ScrollView>
+  </SafeAreaView>;
   return <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-      <Text accessibilityRole="header" style={styles.title}>ลงทะเบียนกิจกรรม</Text>
+      <Text accessibilityRole="header" style={styles.title}>ลงทะเบียนเข้าร่วมกิจกรรม</Text>
       {!eventId && <Text accessibilityRole="alert" style={styles.error}>รหัสกิจกรรมไม่ถูกต้อง</Text>}
       <Text style={styles.text}>ชื่อ-นามสกุล</Text>
       <TextInput accessibilityLabel="ชื่อ-นามสกุล" onChangeText={setFullName} style={styles.input} value={fullName} />
@@ -107,7 +116,7 @@ export default function Register() {
       {permissionBlocked && <Action title="เปิดการตั้งค่าเพื่ออนุญาต" onPress={() => { void Linking.openSettings(); }} />}
       <Text style={styles.text}>รองรับ JPEG/PNG ไม่เกิน 3 MB; รูปจะส่งเมื่อกดลงทะเบียน</Text>
       {!!error && <Text accessibilityRole="alert" style={styles.error}>{error}</Text>}
-      <Action title={busy ? 'กำลังส่ง…' : 'ลงทะเบียน'} disabled={busy || !eventId} onPress={() => void submit()} />
+      <Action title={busy ? 'กำลังส่ง…' : 'ลงทะเบียนเข้าร่วมกิจกรรม'} disabled={busy || !eventId} onPress={() => void submit()} />
       </ScrollView>
     </KeyboardAvoidingView>
   </SafeAreaView>;

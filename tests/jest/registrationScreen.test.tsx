@@ -13,7 +13,10 @@ it('registers the selected device event through API with its private snapshot', 
   const screen = await render(<Register />);
   await fireEvent.changeText(screen.getByLabelText('ชื่อ-นามสกุล'), 'ผู้ทดสอบ');
   await fireEvent.changeText(screen.getByLabelText('อีเมล'), 'test@example.test');
-  await fireEvent.press(screen.getByRole('button', { name: 'ลงทะเบียน' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'ลงทะเบียนเข้าร่วมกิจกรรม' }));
+  await waitFor(() => expect(screen.getByText('ลงทะเบียนเข้าร่วมสำเร็จแล้ว')).toBeTruthy());
+  expect(screen.queryByRole('button', { name: 'ลงทะเบียนเข้าร่วมกิจกรรม' })).toBeNull();
+  await fireEvent.press(screen.getByRole('button', { name: 'กลับไปดูกิจกรรมนี้' }));
   await waitFor(() => expect(router.replace).toHaveBeenCalledWith({ pathname: '/events/[id]', params: { id: 'explore-kku' } }));
   const [path, options, token] = jest.mocked(requestJson).mock.calls[0];
   expect(path).toBe('/events/explore-kku/registrations');
@@ -27,7 +30,8 @@ it('shows an HTTP diagnosis when the API fails instead of claiming the form is i
   const screen = await render(<Register />);
   await fireEvent.changeText(screen.getByLabelText('ชื่อ-นามสกุล'), 'ผู้ทดสอบ');
   await fireEvent.changeText(screen.getByLabelText('อีเมล'), 'test@example.test');
-  await fireEvent.press(screen.getByRole('button', { name: 'ลงทะเบียน' }));
+  await fireEvent.press(screen.getByRole('button', { name: 'ลงทะเบียนเข้าร่วมกิจกรรม' }));
   await waitFor(() => expect(screen.getByText(/HTTP 500/)).toBeTruthy());
+  expect(screen.queryByText('ลงทะเบียนเข้าร่วมสำเร็จแล้ว')).toBeNull();
   expect(screen.getByLabelText('ชื่อ-นามสกุล').props.value).toBe('ผู้ทดสอบ');
 });

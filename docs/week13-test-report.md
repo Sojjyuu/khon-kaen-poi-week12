@@ -109,3 +109,11 @@ Reproduction: sign in, open a device-seeded `explore-*` event or a user-created 
 Fix: submit the selected local event snapshot alongside registration. Validate the snapshot and its matching ID at the API, store it privately under the authenticated account in SQLite, and retain the existing per-account/event deduplication. Local snapshots never enter the public event catalog. Arbitrary unknown IDs without valid snapshots still fail; photo upload remains tied to the authenticated owner's registration. UI now distinguishes missing event, invalid data, and connectivity errors.
 
 Validation: TypeScript and lint pass; Node tests 20/20 and Jest tests 26/26 (11 suites). Regression coverage submits the real registration screen, tests local/seeded events via the API, duplicate requests, restart persistence, malformed snapshots, and cross-account photo denial. Phone retest pending. Update both app code and running API before retrying; no account reset required.
+
+## Registration UX clarification — 2026-09-29
+
+- Renamed favorites navigation and headings to “กิจกรรมโปรด”; favorites remain separate from event registrations.
+- Registration actions now say “ลงทะเบียนเข้าร่วมกิจกรรม”. Successful submission shows a confirmation screen before the user returns to event details.
+- Failed requests retain the form and do not display success. Successful submission removes the submit button to prevent accidental repeated submission.
+- Verification: `npm run typecheck`, `npm run lint`, and `npm test` passed (20 Node tests + 27 Jest tests across 11 suites).
+- Device verification for this change is still pending; no new registered-events history page is included.

@@ -188,7 +188,7 @@ export default function EventDetail() {
             {event.venue ? <VenuePicker initial={event.venue} selected={event.venue} /> : poi && <PoiMap poi={poi} />}
             {hasCampusApi() && <View style={styles.card}>
               <Text accessibilityRole="header" style={styles.subtitle}>เข้าร่วมกิจกรรม</Text>
-              <Action title={session.status === 'authenticated' ? 'ลงทะเบียนกิจกรรม' : 'เข้าสู่ระบบเพื่อลงทะเบียน'}
+              <Action title={session.status === 'authenticated' ? 'ลงทะเบียนเข้าร่วมกิจกรรม' : 'เข้าสู่ระบบเพื่อลงทะเบียน'}
                 disabled={session.status === 'loading'}
                 onPress={() => session.status === 'authenticated'
                   ? router.push({ pathname: '/register', params: { id: event.id } })
