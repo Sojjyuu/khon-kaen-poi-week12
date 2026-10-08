@@ -1,3 +1,4 @@
+import { DinoEmpty } from '../src/components/DinoIdentity';
 import { Action } from '../src/components/EventUI';
 import { requireAccount } from '../src/features/auth/requireAccount';
 import { useCallback, useState } from 'react';
@@ -42,8 +43,7 @@ export default function MyTripScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>ยังไม่มีสถานที่ในทริป</Text>
-            <Text style={styles.emptyText}>กลับหน้าแรกแล้วกด “เพิ่มเข้าทริป” ที่สถานที่ที่สนใจ</Text>
+            <DinoEmpty title="Dino พร้อมแล้ว จุดหมายแรกคือที่ไหน?" description="กลับหน้าแรกแล้วกดเพิ่มเข้าทริปที่สถานที่ที่สนใจ" />
             <Pressable style={styles.primaryButton} onPress={() => router.replace('/')}>
               <Text style={styles.primaryButtonText}>กลับไปเลือกสถานที่</Text>
             </Pressable>

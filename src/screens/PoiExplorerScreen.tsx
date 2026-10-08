@@ -1,3 +1,4 @@
+import { DinoWelcome, DinoEmpty } from '../components/DinoIdentity';
 import { requireAccount } from '../features/auth/requireAccount';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import { Link, router, useFocusEffect } from 'expo-router';
@@ -61,9 +62,10 @@ export function PoiExplorerScreen() {
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
+          <DinoWelcome />
           <View style={styles.shortcuts}>
             <Pressable accessibilityRole="button" onPress={() => router.push('/trip')} style={styles.shortcut}>
-              <Text style={styles.shortcutText}>ทริปของฉัน →</Text>
+              <Text style={styles.shortcutText}>🦕 ทริปของฉัน →</Text>
             </Pressable>
             <Pressable accessibilityRole="button" onPress={() => router.push('/camera')} style={[styles.shortcut, { backgroundColor: '#E8EEF5' }]}>
               <Text style={styles.shortcutText}>บันทึกภาพ →</Text>
@@ -241,9 +243,11 @@ export function PoiExplorerScreen() {
         );
       }}
       ListEmptyComponent={
-        <View accessibilityLiveRegion="polite" style={styles.emptySearch}>
-          <Text accessibilityRole="header" style={styles.emptySearchTitle}>ไม่พบสถานที่</Text>
-          <Text style={styles.emptySearchText}>ลองเปลี่ยนคำค้นหา หรือเลือกหมวด “ทั้งหมด”</Text>
+        <View>
+          <DinoEmpty title="Dino ยังไม่พบจุดหมายนี้" description="ลองเปลี่ยนคำค้นหา หรือเลือกหมวดทั้งหมด เพื่อสำรวจสถานที่อื่น" />
+          <Pressable accessibilityRole="button" style={styles.clearFilterButton} onPress={() => { setSearchQuery(''); setSelectedCategory('ทั้งหมด'); }}>
+            <Text style={styles.clearFilterText}>ดูสถานที่ทั้งหมด</Text>
+          </Pressable>
         </View>
       }
       ListFooterComponent={<Link href="/photo-credits" style={{ paddingVertical: 16, color: colors.textMuted }}>แหล่งที่มาของรูปสถานที่</Link>}

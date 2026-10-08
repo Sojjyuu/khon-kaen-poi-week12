@@ -1,3 +1,4 @@
+import { DinoEmpty } from '../../src/components/DinoIdentity';
 import { FlatList, Text } from 'react-native';
 import { router } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,7 +16,7 @@ export default function Favorites() {
       data={events.filter((event) => ids.includes(event.id))}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={<Text accessibilityRole="header" style={styles.title}>กิจกรรมโปรด</Text>}
-      ListEmptyComponent={<><Text style={styles.text}>{ready ? 'ยังไม่มีกิจกรรมโปรด' : 'กำลังอ่านรายการโปรด…'}</Text><Action title="กลับไปเลือกกิจกรรม" onPress={() => router.push('/events')} /></>}
+      ListEmptyComponent={<>{ready ? <DinoEmpty title="ยังไม่มีกิจกรรมโปรด" description="Dino รอออกเดินทางกับคุณ ลองเลือกกิจกรรมที่สนใจแล้วกดบันทึก" /> : <Text style={styles.text}>กำลังอ่านรายการโปรด…</Text>}<Action title="กลับไปเลือกกิจกรรม" onPress={() => router.push('/events')} /></>}
       renderItem={({ item }) => <EventCard event={item} isFavorite onToggleFavorite={(id) => { void toggle(id); }}
         onOpen={(id) => router.push({ pathname: '/events/[id]', params: { id } })}
         onDelete={() => router.push({ pathname: '/events/[id]', params: { id: item.id } })} />}
