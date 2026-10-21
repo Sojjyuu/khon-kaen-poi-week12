@@ -6,7 +6,7 @@ const read = (path) => fs.readFileSync(path, 'utf8');
 
 test('event screens do not directly access storage or notification device APIs', () => {
   const screens = [
-    'app/events/index.tsx',
+    'app/(tabs)/events.tsx',
     'app/events/[id].tsx',
     'src/screens/PoiExplorerScreen.tsx',
   ].map(read).join('\n');
@@ -14,7 +14,7 @@ test('event screens do not directly access storage or notification device APIs',
 });
 
 test('event list uses virtualization, stable renderer and a memoized row', () => {
-  const screen = read('app/events/index.tsx');
+  const screen = read('app/(tabs)/events.tsx');
   const row = read('src/features/events/components/EventCard.tsx');
   assert.match(screen, /<FlatList/);
   assert.match(screen, /renderEvent = useCallback/);
@@ -24,7 +24,7 @@ test('event list uses virtualization, stable renderer and a memoized row', () =>
 
 test('accessibility fixes include headings, live regions, touch size and reduced motion', () => {
   const files = [
-    'app/events/index.tsx',
+    'app/(tabs)/events.tsx',
     'app/events/[id].tsx',
     'src/components/EventUI.tsx',
     'src/components/PoiMap.tsx',

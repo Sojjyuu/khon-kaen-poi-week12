@@ -1,15 +1,40 @@
+import { getAccountScope, registerAccountTransition } from '../storage/accountScope';
 import { AppState, Linking, Platform } from 'react-native';
 import * as Notifications from 'expo-notifications';
 import Constants from 'expo-constants';
 
 export const REMINDER_CHANNEL = 'event-reminders';
 let channelAvailable = false;
+let desiredOwner = getAccountScope();
+let operation: Promise<unknown> = Promise.resolve();
+function serial<T>(task: () => Promise<T>): Promise<T> {
+  const result = operation.then(task, task);
+  operation = result.catch(() => undefined);
+  return result;
+}
+registerAccountTransition((next) => {
+  desiredOwner = next;
+  return serial(async () => {
+    for (const request of await Notifications.getAllScheduledNotificationsAsync()) {
+      if (request.identifier.startsWith('event-reminder:') &&
+          (!next || request.content.data?.ownerId !== next)) {
+        await Notifications.cancelScheduledNotificationAsync(request.identifier);
+      }
+    }
+    for (const item of await Notifications.getPresentedNotificationsAsync()) {
+      if (item.request.identifier.startsWith('event-reminder:') &&
+          (!next || item.request.content.data?.ownerId !== next)) {
+        await Notifications.dismissNotificationAsync(item.request.identifier);
+      }
+    }
+  });
+});
 
 Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowBanner: true,
-    shouldShowList: true,
-    shouldPlaySound: true,
+  handleNotification: async (notification) => ({
+    shouldShowBanner: !!getAccountScope() && notification.request.content.data?.ownerId === getAccountScope(),
+    shouldShowList: !!getAccountScope() && notification.request.content.data?.ownerId === getAccountScope(),
+    shouldPlaySound: !!getAccountScope() && notification.request.content.data?.ownerId === getAccountScope(),
     shouldSetBadge: false,
   }),
 });
@@ -21,6 +46,7 @@ export type ReminderNotification = {
 
 export type NotificationResponseData = {
   key: string;
+  ownerId: unknown;
   eventId: unknown;
   isDefaultAction: boolean;
 };
@@ -54,7 +80,8 @@ export const notificationService = {
       .filter(
         (notification) =>
           notification.identifier.startsWith('event-reminder:') &&
-          notification.content.data?.eventId === eventId,
+          notification.content.data?.eventId === eventId &&
+          !!getAccountScope() && notification.content.data?.ownerId === getAccountScope(),
       )
       .map((notification) => ({
         identifier: notification.identifier,
@@ -67,7 +94,12 @@ export const notificationService = {
     eventId: string;
     date: Date;
     test: boolean;
+    ownerId: string;
   }): Promise<string> {
+    return serial(async () => {
+    if (input.ownerId !== desiredOwner || input.ownerId !== getAccountScope()) {
+      throw new Error('บัญชีเปลี่ยนแล้ว กรุณาเข้าสู่ระบบและตั้งเตือนใหม่');
+    }
     await Notifications.cancelScheduledNotificationAsync(input.identifier);
     return Notifications.scheduleNotificationAsync({
       identifier: input.identifier,
@@ -77,13 +109,14 @@ export const notificationService = {
           : 'กิจกรรมของคุณจะเริ่มในอีก 30 นาที',
         body: 'แตะเพื่อดูรายละเอียดกิจกรรม',
         sound: 'default',
-        data: { eventId: input.eventId },
+        data: { eventId: input.eventId, ownerId: input.ownerId },
       },
       trigger: {
         type: Notifications.SchedulableTriggerInputTypes.DATE,
         date: input.date,
         ...(Platform.OS === 'android' && channelAvailable ? { channelId: REMINDER_CHANNEL } : {}),
       },
+    });
     });
   },
 
@@ -99,6 +132,7 @@ export const notificationService = {
     return {
       key: `${request.identifier}:${response.notification.date}:${response.actionIdentifier}`,
       eventId: request.content.data?.eventId,
+      ownerId: request.content.data?.ownerId,
       isDefaultAction:
         response.actionIdentifier === Notifications.DEFAULT_ACTION_IDENTIFIER,
     };

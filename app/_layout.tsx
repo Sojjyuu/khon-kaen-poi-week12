@@ -1,3 +1,4 @@
+import { ActivityIndicator, Text, View } from 'react-native';
 import { useEffect, useRef } from 'react';
 import { Stack, router, useRootNavigationState } from 'expo-router';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -5,8 +6,21 @@ import { StatusBar } from 'expo-status-bar';
 
 import { reminderRepository } from '../src/repositories/reminderRepository';
 import { colors } from '../src/theme/colors';
+import { SessionProvider, useSession } from '../src/features/auth/session';
+import { FavoritesProvider } from '../src/features/events/FavoritesProvider';
 
 export default function RootLayout() {
+  return <SessionProvider><AccountRoutes /></SessionProvider>;
+}
+
+function AccountRoutes() {
+  const { session } = useSession();
+  if (session.status === 'loading') return <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', gap: 12 }}><ActivityIndicator /><Text>กำลังตรวจสอบบัญชี…</Text></View>;
+  return <FavoritesProvider key={session.status === 'authenticated' ? session.user.id : 'guest'}><AppRoutes /></FavoritesProvider>;
+}
+
+function AppRoutes() {
+  const { session } = useSession();
   const state = useRootNavigationState();
   const handled = useRef(new Set<string>());
 
@@ -32,15 +46,26 @@ export default function RootLayout() {
         screenOptions={{
           headerStyle: { backgroundColor: colors.surface },
           headerTintColor: colors.navy,
+          headerBackTitle: 'กลับ',
+          headerBackButtonDisplayMode: 'minimal',
           contentStyle: { backgroundColor: colors.background },
         }}
       >
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="events/index" options={{ title: 'กิจกรรมขอนแก่น' }} />
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen name="events/[id]" options={{ title: 'รายละเอียดกิจกรรม' }} />
         <Stack.Screen name="trip" options={{ title: 'My Trip' }} />
+        <Stack.Screen name="about" options={{ title: 'เกี่ยวกับผู้พัฒนา' }} />
         <Stack.Screen name="camera" options={{ title: 'Camera' }} />
-        <Stack.Screen name="profile" options={{ title: 'Profile' }} />
+        <Stack.Protected guard={session.status === 'anonymous'}>
+          <Stack.Screen name="login" options={{ title: 'เข้าสู่ระบบ' }} />
+          <Stack.Screen name="signup" options={{ title: 'สมัครสมาชิก' }} />
+        </Stack.Protected>
+        <Stack.Protected guard={session.status === 'authenticated'}>
+          <Stack.Screen name="journeys" options={{ title: 'บันทึกการเดินทาง' }} />
+          <Stack.Screen name="journey" options={{ title: 'ทริปของฉัน' }} />
+          <Stack.Screen name="registrations" options={{ title: 'กิจกรรมที่ลงทะเบียนแล้ว' }} />
+          <Stack.Screen name="register" options={{ title: 'ลงทะเบียนเข้าร่วมกิจกรรม' }} />
+        </Stack.Protected>
       </Stack>
     </SafeAreaProvider>
   );

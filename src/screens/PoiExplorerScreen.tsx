@@ -1,7 +1,10 @@
+import { DinoWelcome, DinoEmpty } from '../components/DinoIdentity';
+import { requireAccount } from '../features/auth/requireAccount';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Link, useFocusEffect } from 'expo-router';
-import { FlatList, Image, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { Link, router, useFocusEffect } from 'expo-router';
+import { Alert, FlatList, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 
+import { CoverPhoto } from '../components/CoverPhoto';
 import { PoiMap } from '../components/PoiMap';
 import { pointsOfInterest } from '../data/pointsOfInterest';
 import { getFavoritePoiIds, toggleFavoritePoi } from '../services/favorites';
@@ -9,7 +12,7 @@ import { colors } from '../theme/colors';
 import { useReduceMotion } from '../features/accessibility/hooks/useReduceMotion';
 import type { PointOfInterest } from '../types/poi';
 
-const dinoLogo = require('../../assets/khon-kaen-dino-icon.png');
+
 const categories = ['ทั้งหมด', ...Array.from(new Set(pointsOfInterest.map((poi) => poi.category)))];
 
 export function PoiExplorerScreen() {
@@ -19,6 +22,7 @@ export function PoiExplorerScreen() {
   const [selectedCategory, setSelectedCategory] = useState('ทั้งหมด');
   const listRef = useRef<FlatList<PointOfInterest>>(null);
   const reduceMotion = useReduceMotion();
+  const mapOffset = useRef(0);
 
   const filteredPoints = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
@@ -37,54 +41,35 @@ export function PoiExplorerScreen() {
   );
 
   const toggleTrip = useCallback(async () => {
-    setFavoriteIds(await toggleFavoritePoi(selectedPoi.id));
+    if (!requireAccount()) return;
+    try { setFavoriteIds(await toggleFavoritePoi(selectedPoi.id)); }
+    catch { Alert.alert('บันทึกทริปไม่ได้', 'กรุณาลองอีกครั้ง'); }
   }, [selectedPoi.id]);
 
   const selectPoi = useCallback((poi: PointOfInterest) => {
     setSelectedPoi(poi);
     setTimeout(() => {
-      listRef.current?.scrollToOffset({ offset: 355, animated: !reduceMotion });
+      listRef.current?.scrollToOffset({ offset: mapOffset.current, animated: !reduceMotion });
     }, 80);
   }, [reduceMotion]);
 
   return (
     <FlatList
+      style={{ flex: 1 }}
       ref={listRef}
       contentContainerStyle={styles.content}
       data={filteredPoints}
       keyExtractor={(item) => item.id}
       ListHeaderComponent={
         <View>
-          <View style={styles.hero}>
-            <View style={styles.orbitLarge} />
-            <View style={styles.orbitSmall} />
-            <View style={styles.heroTopRow}>
-              <View style={styles.brandLockup}>
-                <Image accessible={false} source={dinoLogo} style={styles.logo} />
-                <View>
-                  <Text style={styles.brandEyebrow}>KHON KAEN</Text>
-                  <Text style={styles.brandName}>DINO EXPLORER</Text>
-                </View>
-              </View>
-              <View style={styles.heroBadge}>
-                <Text style={styles.heroBadgeNumber}>10</Text>
-                <Text style={styles.heroBadgeText}>PLACES</Text>
-              </View>
-            </View>
-
-            <Text accessibilityRole="header" style={styles.heroTitle}>ตามรอยเมืองไดโนเสาร์{`\n`}เที่ยวขอนแก่นให้ครบ</Text>
-            <Text style={styles.heroSubtitle}>
-              รวมหมุดแลนด์มาร์กสำคัญ เลือกหนึ่งสถานที่แล้วออกสำรวจบนแผนที่ได้ทันที
-            </Text>
-
-            <View style={styles.heroChips}>
-              <View style={styles.heroChipGold}>
-                <Text style={styles.heroChipGoldText}>🦕 DINOSAUR CITY</Text>
-              </View>
-              <View style={styles.heroChipDark}>
-                <Text style={styles.heroChipDarkText}>📍 10 จุดแนะนำ</Text>
-              </View>
-            </View>
+          <DinoWelcome />
+          <View style={styles.shortcuts}>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/trip')} style={styles.shortcut}>
+              <Text style={styles.shortcutText}>🦕 ทริปของฉัน →</Text>
+            </Pressable>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/camera')} style={[styles.shortcut, { backgroundColor: '#E8EEF5' }]}>
+              <Text style={styles.shortcutText}>บันทึกภาพ →</Text>
+            </Pressable>
           </View>
 
           <View style={styles.searchSection}>
@@ -110,14 +95,14 @@ export function PoiExplorerScreen() {
                 return (
                   <Pressable
                     key={category}
-                    accessibilityLabel={`กรองหมวด ${category}`}
+                    accessibilityLabel={`กรองหมวด ${category}, ${category === 'ทั้งหมด' ? pointsOfInterest.length : pointsOfInterest.filter((poi) => poi.category === category).length} สถานที่`}
                     accessibilityRole="button"
                     accessibilityState={{ selected }}
                     onPress={() => setSelectedCategory(category)}
                     style={[styles.filterChip, selected && styles.filterChipSelected]}
                   >
                     <Text style={[styles.filterChipText, selected && styles.filterChipTextSelected]}>
-                      {category}
+                      {category} ({category === 'ทั้งหมด' ? pointsOfInterest.length : pointsOfInterest.filter((poi) => poi.category === category).length})
                     </Text>
                   </Pressable>
                 );
@@ -146,7 +131,7 @@ export function PoiExplorerScreen() {
           </View>
 
 
-          <View style={styles.mapSectionHeader}>
+          <View style={styles.mapSectionHeader} onLayout={(event) => { mapOffset.current = event.nativeEvent.layout.y; }}>
             <View>
               <Text style={styles.sectionEyebrow}>INTERACTIVE MAP</Text>
               <Text accessibilityRole="header" style={styles.sectionTitle}>แผนที่สำรวจ</Text>
@@ -161,10 +146,9 @@ export function PoiExplorerScreen() {
           <PoiMap poi={selectedPoi} />
 
           <View
-            accessible
-            accessibilityLabel={`สถานที่ที่เลือก ${selectedPoi.name}, ${selectedPoi.category}, ${selectedPoi.address}`}
             style={styles.selectedCard}
           >
+            <CoverPhoto poiId={selectedPoi.id} title={selectedPoi.name} height={180} />
             <View style={styles.selectedTopRow}>
               <View style={styles.selectedIcon}>
                 <Text style={styles.selectedIconText}>{selectedPoi.icon}</Text>
@@ -189,6 +173,9 @@ export function PoiExplorerScreen() {
             </View>
 
             <View style={styles.tripActions}>
+              <Link href={{ pathname: '/events', params: { poiId: selectedPoi.id } }} accessibilityRole="button" style={styles.tripLink}>
+                <Text style={styles.tripLinkText}>สร้างกิจกรรมที่นี่ →</Text>
+              </Link>
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={favoriteIds.includes(selectedPoi.id) ? 'นำสถานที่ออกจากทริป' : 'เพิ่มสถานที่เข้าทริป'}
@@ -209,7 +196,7 @@ export function PoiExplorerScreen() {
           <View style={styles.listHeader}>
             <View>
               <Text style={styles.sectionEyebrow}>CURATED COLLECTION</Text>
-              <Text accessibilityRole="header" style={styles.sectionTitle}>10 สถานที่สำคัญ</Text>
+              <Text accessibilityRole="header" style={styles.sectionTitle}>{filteredPoints.length} สถานที่{selectedCategory === 'ทั้งหมด' ? 'น่าไป' : ` · ${selectedCategory}`}</Text>
             </View>
             <Text style={styles.listHint}>แตะเพื่อเลือก</Text>
           </View>
@@ -231,13 +218,12 @@ export function PoiExplorerScreen() {
               pressed && styles.pressed,
             ]}
           >
+            <CoverPhoto poiId={item.id} title={item.name} height={156} />
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
             <View style={[styles.index, selected && styles.indexSelected]}>
               <Text style={[styles.indexText, selected && styles.indexTextSelected]}>
                 {String(index + 1).padStart(2, '0')}
               </Text>
-            </View>
-            <View style={[styles.poiIcon, selected && styles.poiIconSelected]}>
-              <Text style={styles.poiIconText}>{item.icon}</Text>
             </View>
             <View style={styles.poiCopy}>
               <Text style={[styles.poiName, selected && styles.poiNameSelected]}>
@@ -252,15 +238,19 @@ export function PoiExplorerScreen() {
                 {selected ? '✓' : '›'}
               </Text>
             </View>
+            </View>
           </Pressable>
         );
       }}
       ListEmptyComponent={
-        <View accessibilityLiveRegion="polite" style={styles.emptySearch}>
-          <Text accessibilityRole="header" style={styles.emptySearchTitle}>ไม่พบสถานที่</Text>
-          <Text style={styles.emptySearchText}>ลองเปลี่ยนคำค้นหา หรือเลือกหมวด “ทั้งหมด”</Text>
+        <View>
+          <DinoEmpty title="Dino ยังไม่พบจุดหมายนี้" description="ลองเปลี่ยนคำค้นหา หรือเลือกหมวดทั้งหมด เพื่อสำรวจสถานที่อื่น" />
+          <Pressable accessibilityRole="button" style={styles.clearFilterButton} onPress={() => { setSearchQuery(''); setSelectedCategory('ทั้งหมด'); }}>
+            <Text style={styles.clearFilterText}>ดูสถานที่ทั้งหมด</Text>
+          </Pressable>
         </View>
       }
+      ListFooterComponent={<Link href="/photo-credits" style={{ paddingVertical: 16, color: colors.textMuted }}>แหล่งที่มาของรูปสถานที่</Link>}
       showsVerticalScrollIndicator={false}
     />
   );
@@ -271,132 +261,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 17,
     paddingBottom: 44,
   },
-  hero: {
-    overflow: 'hidden',
-    borderRadius: 34,
-    backgroundColor: colors.navy,
-    padding: 22,
-    marginTop: 8,
-    shadowColor: colors.navy,
-    shadowOffset: { width: 0, height: 14 },
-    shadowOpacity: 0.24,
-    shadowRadius: 24,
-    elevation: 10,
-  },
-  orbitLarge: {
-    position: 'absolute',
-    width: 210,
-    height: 210,
-    top: -92,
-    right: -54,
-    borderRadius: 105,
-    borderWidth: 34,
-    borderColor: 'rgba(243,185,40,0.10)',
-  },
-  orbitSmall: {
-    position: 'absolute',
-    width: 95,
-    height: 95,
-    bottom: -45,
-    left: 115,
-    borderRadius: 48,
-    backgroundColor: 'rgba(255,107,74,0.12)',
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  brandLockup: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logo: {
-    width: 54,
-    height: 54,
-    borderRadius: 18,
-    marginRight: 11,
-  },
-  brandEyebrow: {
-    color: colors.gold,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 2.1,
-  },
-  brandName: {
-    color: '#FFFFFF',
-    fontSize: 13,
-    fontWeight: '900',
-    letterSpacing: 0.7,
-    marginTop: 2,
-  },
-  heroBadge: {
-    width: 54,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 18,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.18)',
-    backgroundColor: 'rgba(255,255,255,0.08)',
-  },
-  heroBadgeNumber: {
-    color: colors.gold,
-    fontSize: 19,
-    lineHeight: 21,
-    fontWeight: '900',
-  },
-  heroBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 6,
-    fontWeight: '900',
-    letterSpacing: 0.8,
-  },
-  heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 29,
-    lineHeight: 38,
-    fontWeight: '900',
-    marginTop: 25,
-  },
-  heroSubtitle: {
-    maxWidth: 315,
-    color: '#BFCBE0',
-    fontSize: 12,
-    lineHeight: 19,
-    marginTop: 9,
-  },
-  heroChips: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  heroChipGold: {
-    borderRadius: 999,
-    backgroundColor: colors.gold,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  heroChipGoldText: {
-    color: colors.navy,
-    fontSize: 9,
-    fontWeight: '900',
-    letterSpacing: 0.4,
-  },
-  heroChipDark: {
-    borderRadius: 999,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.16)',
-    backgroundColor: 'rgba(255,255,255,0.06)',
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    marginLeft: 8,
-  },
-  heroChipDarkText: {
-    color: '#FFFFFF',
-    fontSize: 9,
-    fontWeight: '800',
-  },
+  shortcuts: { flexDirection: 'row', gap: 10, paddingTop: 12 },
+  shortcut: { flex: 1, minWidth: 0, minHeight: 52, padding: 12, borderRadius: 16, backgroundColor: '#FFF0BC', justifyContent: 'center' },
+  shortcutText: { fontSize: 15, fontWeight: '800', color: colors.navy, textAlign: 'center' },
   mapSectionHeader: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -536,8 +403,9 @@ const styles = StyleSheet.create({
     fontVariant: ['tabular-nums'],
   },
   listHeader: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    gap: 8,
     justifyContent: 'space-between',
     marginTop: 34,
     marginBottom: 12,
@@ -549,8 +417,6 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   poiCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     minHeight: 76,
     borderRadius: 22,
     borderWidth: 1,
@@ -646,12 +512,10 @@ const styles = StyleSheet.create({
     fontWeight: '900',
   },
   tripActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    gap: 10,
     marginTop: 14,
   },
   tripButton: {
-    flex: 1,
     minHeight: 48,
     alignItems: 'center',
     justifyContent: 'center',
@@ -673,7 +537,7 @@ const styles = StyleSheet.create({
   },
   tripLink: {
     minHeight: 48,
-    marginLeft: 9,
+    textAlign: 'center',
     borderRadius: 14,
     backgroundColor: '#EEF2F7',
     paddingHorizontal: 12,

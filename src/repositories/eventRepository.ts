@@ -1,10 +1,14 @@
+import { getAccountScope } from '../storage/accountScope';
 import { pointsOfInterest } from '../data/pointsOfInterest';
 import {
   isEventId,
   isUserCreatedEventId,
   type CampusEvent,
 } from '../features/events/types';
-import { eventStorage, type EventStorage } from '../storage/eventStorage';
+import { createAccountEventStorage, eventStorage, type EventStorage } from '../storage/eventStorage';
+import { cachedRemoteEvents } from '../features/events/remoteEvents';
+import { fetchCampusEvent, hasCampusApi } from '../services/campusApi';
+import { isCoordinates, type Coordinates } from '../types/coordinates';
 
 function isCampusEvent(value: unknown): value is CampusEvent {
   if (!value || typeof value !== 'object') return false;
@@ -16,6 +20,7 @@ function isCampusEvent(value: unknown): value is CampusEvent {
     typeof event.startsAt === 'string' &&
     Number.isFinite(Date.parse(event.startsAt)) &&
     pointsOfInterest.some((poi) => poi.id === event.poiId)
+    && (event.venue === undefined || isCoordinates(event.venue))
   );
 }
 
@@ -56,23 +61,33 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
 
     async findById(id: unknown): Promise<CampusEvent | undefined> {
       if (!isEventId(id)) return undefined;
-      return (await load()).find((event) => event.id === id);
+      const local = (await load()).find((event) => event.id === id);
+      if (local) return local;
+      if (hasCampusApi()) {
+        try { return await fetchCampusEvent(id); } catch {
+          return (await cachedRemoteEvents())?.events.find((event) => event.id === id);
+        }
+      }
+      return undefined;
     },
 
-    async create(title: string, startsAt: Date): Promise<CampusEvent> {
+    async create(title: string, startsAt: Date, poiId = pointsOfInterest[0].id, venue?: Coordinates): Promise<CampusEvent> {
       if (!title.trim() || title.trim().length > 100) {
         throw new Error('กรอกชื่อกิจกรรม 1–100 ตัวอักษร');
       }
       if (!Number.isFinite(startsAt.getTime()) || startsAt.getTime() <= Date.now()) {
         throw new Error('กรุณาเลือกวันและเวลาเริ่มกิจกรรมในอนาคต');
       }
+      if (!pointsOfInterest.some((poi) => poi.id === poiId)) throw new Error('สถานที่ไม่ถูกต้อง');
+      if (venue !== undefined && !isCoordinates(venue)) throw new Error('พิกัดสถานที่ไม่ถูกต้อง');
 
       const events = await load();
       const event: CampusEvent = {
         id: `local-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: title.trim(),
         startsAt: startsAt.toISOString(),
-        poiId: pointsOfInterest[0].id,
+        poiId,
+        ...(venue ? { venue } : {}),
         description: 'กิจกรรมส่วนตัวที่สร้างบนเครื่องนี้',
       };
       const next = [...events, event];
@@ -98,7 +113,23 @@ export function createEventRepository(storage: EventStorage = eventStorage) {
   };
 }
 
-export const eventRepository = createEventRepository();
+// Capture a repository per account so in-flight writes never move to another user.
+const repositories = new Map<string | null, ReturnType<typeof createEventRepository>>();
+function currentRepository() {
+  const owner = getAccountScope();
+  let repository = repositories.get(owner);
+  if (!repository) {
+    repository = createEventRepository(createAccountEventStorage(owner));
+    repositories.set(owner, repository);
+  }
+  return repository;
+}
+export const eventRepository = {
+  list: () => currentRepository().list(),
+  findById: (id: unknown) => currentRepository().findById(id),
+  create: (...args: Parameters<ReturnType<typeof createEventRepository>['create']>) => currentRepository().create(...args),
+  remove: (id: unknown) => currentRepository().remove(id),
+};
 
 export function formatEventTime(iso: string) {
   return (

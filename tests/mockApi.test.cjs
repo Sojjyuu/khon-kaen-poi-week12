@@ -1,0 +1,173 @@
+const { test } = require('node:test');
+const assert = require('node:assert/strict');
+const { fork } = require('node:child_process');
+const path = require('node:path');
+const fs = require('node:fs');
+const os = require('node:os');
+
+test('mock API enforces session and photo validation across the registration flow', async (t) => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'poi-api-'));
+  t.after(() => fs.rmSync(folder, { recursive: true, force: true }));
+  const server = fork(path.join(__dirname, '../scripts/mock-campus-api.cjs'), {
+    env: { ...process.env, CAMPUS_DATA_FILE: path.join(folder, 'accounts.json'), PORT: '0', CAMPUS_TEST_EMAIL: 'student@example.test', CAMPUS_TEST_PASSWORD: 'disposable-only' },
+    stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+  });
+  t.after(() => server.kill());
+  const { port } = await new Promise((resolve, reject) => {
+    server.once('message', resolve);
+    server.once('exit', (code) => reject(new Error(`API exited ${code}`)));
+  });
+  const url = `http://127.0.0.1:${port}`;
+  const events = await fetch(`${url}/events`).then((res) => res.json());
+  assert.equal(events.length, 1);
+  const denied = await fetch(`${url}/events/api-event-1/registrations`, { method: 'POST', body: '{}' });
+  assert.equal(denied.status, 401);
+  const login = await fetch(`${url}/auth/login`, {
+    method: 'POST', body: JSON.stringify({ email: 'student@example.test', password: 'disposable-only' }),
+  }).then((res) => res.json());
+  assert.ok(login.accessToken);
+  const headers = { Authorization: `Bearer ${login.accessToken}` };
+  const restored = await fetch(`${url}/auth/me`, { headers }).then((res) => res.json());
+  assert.equal(restored.id, 'tester');
+  const registration = await fetch(`${url}/events/api-event-1/registrations`, {
+    method: 'POST', headers, body: JSON.stringify({ fullName: 'Student', email: 'student@example.test' }),
+  }).then((res) => res.json());
+  assert.match(registration.registrationId, /^reg-/);
+  const again = await fetch(`${url}/events/api-event-1/registrations`, {
+    method: 'POST', headers, body: JSON.stringify({ fullName: 'Student', email: 'student@example.test' }),
+  }).then((res) => res.json());
+  assert.equal(again.registrationId, registration.registrationId);
+  const upload = `${url}/events/api-event-1/registrations/${registration.registrationId}/photo`;
+  const form = new FormData();
+  form.append('photo', new Blob([Buffer.from('89504e470d0a1a0a', 'hex')], { type: 'image/png' }), 'test.png');
+  assert.equal((await fetch(upload, { method: 'POST', headers, body: form })).status, 200);
+  const invalid = new FormData();
+  invalid.append('photo', new Blob(['not an image'], { type: 'image/png' }), 'bad.png');
+  assert.equal((await fetch(upload, { method: 'POST', headers, body: invalid })).status, 400);
+});
+
+test('signup validates fields, normalizes email, rejects duplicates and restores the new account', async (t) => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'poi-api-'));
+  t.after(() => fs.rmSync(folder, { recursive: true, force: true }));
+  const server = fork(path.join(__dirname, '../scripts/mock-campus-api.cjs'), {
+    env: { ...process.env, CAMPUS_DATA_FILE: path.join(folder, 'accounts.json'), PORT: '0', CAMPUS_TEST_EMAIL: '', CAMPUS_TEST_PASSWORD: '' },
+    stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+  });
+  t.after(() => server.kill());
+  const { port } = await new Promise((resolve, reject) => {
+    server.once('message', resolve);
+    server.once('exit', (code) => reject(new Error(`API exited ${code}`)));
+  });
+  const url = `http://127.0.0.1:${port}`;
+  const post = (route, body) => fetch(`${url}${route}`, { method: 'POST', body: JSON.stringify(body) });
+  const account = { name: 'Explorer', email: 'NEW@example.test', password: 'temporary-secret' };
+  assert.equal((await post('/auth/register', { ...account, password: 'short' })).status, 400);
+  assert.equal((await post('/auth/register', null)).status, 400);
+  const created = await post('/auth/register', account);
+  assert.equal(created.status, 201);
+  const first = await created.json();
+  assert.equal(first.user.name, 'Explorer');
+  assert.equal(first.user.password, undefined);
+  assert.equal((await post('/auth/register', { ...account, email: 'new@example.test' })).status, 409);
+  assert.equal((await post('/auth/login', { ...account, password: 'incorrect' })).status, 401);
+  const signedIn = await (await post('/auth/login', { ...account, email: 'new@example.test' })).json();
+  assert.equal(signedIn.user.id, first.user.id);
+  assert.notEqual(signedIn.accessToken, first.accessToken);
+  const restored = await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${signedIn.accessToken}` } }).then(r => r.json());
+  assert.equal(restored.name, account.name);
+  assert.equal((await fetch(`${url}/auth/me`, { headers: { Authorization: 'Bearer invalid' } })).status, 401);
+});
+
+test('accounts, profile, registration and sessions survive restart; logout and expiry reject access', async (t) => {
+  const folder = fs.mkdtempSync(path.join(os.tmpdir(), 'poi-persist-'));
+  const dataFile = path.join(folder, 'accounts.json');
+  let server;
+  t.after(() => { server?.kill(); fs.rmSync(folder, { recursive: true, force: true }); });
+  async function start() {
+    server = fork(path.join(__dirname, '../scripts/mock-campus-api.cjs'), {
+      env: { ...process.env, PORT: '0', CAMPUS_DATA_FILE: dataFile, CAMPUS_TEST_EMAIL: '', CAMPUS_TEST_PASSWORD: '' },
+      stdio: ['ignore', 'ignore', 'ignore', 'ipc'],
+    });
+    const { port } = await new Promise((resolve, reject) => {
+      server.once('message', resolve);
+      server.once('exit', code => reject(new Error(`API exited ${code}`)));
+    });
+    return `http://127.0.0.1:${port}`;
+  }
+  async function stop() { const exited = new Promise(resolve => server.once('exit', resolve)); server.kill(); await exited; }
+  let url = await start();
+  const post = (route, body, token) => fetch(`${url}${route}`, { method: 'POST', headers: token ? { Authorization: `Bearer ${token}` } : {}, body: JSON.stringify(body) });
+  const credentials = { name: 'Alice', email: 'alice@example.test', password: 'test-only-secret' };
+  const alice = await (await post('/auth/register', credentials)).json();
+  const photo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+jRZkAAAAASUVORK5CYII=';
+  assert.equal((await post('/auth/profile', { name: 'Updated Alice', bio: 'เที่ยวขอนแก่น', photo }, alice.accessToken)).status, 200);
+  assert.equal((await post('/auth/profile', { name: 'Alice', photo: 'not-a-photo' }, alice.accessToken)).status, 400);
+  const trip = { title: 'ขอนแก่นหนึ่งวัน', date: '2026-09-28', note: 'ไปกับเพื่อน', photo, poiIds: ['kku'] };
+  const journey = (method, token, body) => fetch(`${url}/journeys/trip-one`, { method, headers: { Authorization: `Bearer ${token}` }, ...(body ? { body: JSON.stringify(body) } : {}) });
+  const list = token => fetch(`${url}/journeys`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+  assert.equal((await journey('PUT', alice.accessToken, { ...trip, date: '2026-02-30' })).status, 400);
+  assert.equal((await journey('PUT', alice.accessToken, trip)).status, 200);
+  const bob = await (await post('/auth/register', { name: 'Bob', email: 'bob@example.test', password: 'another-test-only' })).json();
+  assert.deepEqual(await list(bob.accessToken), []);
+  await journey('DELETE', bob.accessToken);
+  assert.equal((await list(alice.accessToken)).length, 1);
+  await journey('PUT', bob.accessToken, { ...trip, title: 'Bob own trip' });
+  assert.equal((await list(alice.accessToken))[0].title, trip.title);
+
+  const registration = await (await post('/events/api-event-1/registrations', { fullName: 'Alice', email: credentials.email }, alice.accessToken)).json();
+  const localEvent = { id: 'explore-kku', title: 'เดินสำรวจ มข.', description: 'ตัวอย่างในเครื่อง', startsAt: '2030-10-01T09:00:00+07:00', poiId: 'kku' };
+  const localRoute = '/events/explore-kku/registrations';
+  const fields = { fullName: 'Alice', email: credentials.email, localEvent };
+  assert.equal((await post(localRoute, { ...fields, localEvent: undefined }, alice.accessToken)).status, 404);
+  assert.equal((await post(localRoute, { ...fields, localEvent: { ...localEvent, id: 'other' } }, alice.accessToken)).status, 400);
+  const localRegistration = await (await post(localRoute, fields, alice.accessToken)).json();
+  assert.match(localRegistration.registrationId, /^reg-/);
+  assert.equal((await (await post(localRoute, fields, alice.accessToken)).json()).registrationId, localRegistration.registrationId);
+  const bobRegistration = await (await post(localRoute, fields, bob.accessToken)).json();
+  assert.notEqual(bobRegistration.registrationId, localRegistration.registrationId);
+  assert.equal((await fetch(`${url}/events/explore-kku/registrations/${localRegistration.registrationId}/photo`, { method: 'POST', headers: { Authorization: `Bearer ${bob.accessToken}` }, body: '{}' })).status, 404);
+  const customEvent = { ...localEvent, id: 'local-123-user', title: 'กิจกรรมที่สร้างเอง' };
+  assert.equal((await post('/events/local-123-user/registrations', { ...fields, localEvent: customEvent }, alice.accessToken)).status, 200);
+  assert.equal((await fetch(`${url}/events`).then(r => r.json())).length, 1);
+  const registeredList = token => fetch(`${url}/registrations`, { headers: { Authorization: `Bearer ${token}` } }).then(r => r.json());
+  assert.equal((await fetch(`${url}/registrations`)).status, 401);
+  assert.equal((await registeredList(alice.accessToken)).length, 3);
+  assert.equal((await registeredList(bob.accessToken)).length, 1);
+  await fetch(`${url}/registrations/local-123-user`, { method: 'DELETE', headers: { Authorization: `Bearer ${bob.accessToken}` } });
+  assert.equal((await registeredList(alice.accessToken)).length, 3);
+  await stop(); url = await start();
+  const history = await registeredList(alice.accessToken);
+  assert.equal(history.length, 3);
+  assert.equal(history.find(item => item.eventId === 'local-123-user').event.title, customEvent.title);
+  await fetch(`${url}/registrations/local-123-user`, { method: 'DELETE', headers: { Authorization: `Bearer ${alice.accessToken}` } });
+  assert.equal((await registeredList(alice.accessToken)).length, 2);
+  assert.equal((await registeredList(bob.accessToken)).length, 1);
+  await stop(); url = await start();
+  assert.equal((await registeredList(alice.accessToken)).length, 2);
+
+  assert.equal((await (await post(localRoute, fields, alice.accessToken)).json()).registrationId, localRegistration.registrationId);
+  const me = await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${alice.accessToken}` } }).then(r => r.json());
+  assert.equal(me.name, 'Updated Alice');
+  assert.equal(me.bio, 'เที่ยวขอนแก่น');
+  assert.equal(me.photo, photo);
+  assert.equal((await list(alice.accessToken))[0].photo, photo);
+  await journey('DELETE', alice.accessToken);
+  assert.deepEqual(await list(alice.accessToken), []);
+  assert.equal((await list(bob.accessToken)).length, 1);
+  const repeat = await (await post('/events/api-event-1/registrations', { fullName: 'Alice', email: credentials.email }, alice.accessToken)).json();
+  assert.equal(repeat.registrationId, registration.registrationId);
+  const restored = await (await post('/auth/login', credentials)).json();
+  assert.equal(restored.user.id, alice.user.id);
+  assert.equal((await post('/auth/logout', {}, restored.accessToken)).status, 200);
+  assert.equal((await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${restored.accessToken}` } })).status, 401);
+  await stop();
+  const { DatabaseSync } = require('node:sqlite');
+  const database = new DatabaseSync(dataFile.replace(/\.json$/, '.sqlite'));
+  const raw = JSON.stringify({ accounts: database.prepare('SELECT * FROM accounts').all(), sessions: database.prepare('SELECT * FROM sessions').all() });
+  assert.equal(raw.includes(credentials.password), false);
+  assert.equal(raw.includes(alice.accessToken), false);
+  database.exec("UPDATE sessions SET data=json_set(data, '$.expiresAt', 0)");
+  database.close();
+  url = await start();
+  assert.equal((await fetch(`${url}/auth/me`, { headers: { Authorization: `Bearer ${alice.accessToken}` } })).status, 401);
+});

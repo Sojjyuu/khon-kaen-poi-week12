@@ -1,5 +1,8 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
+# Local classroom API account data (never commit)
+.local-data/
+
 # dependencies
 node_modules/
 .npm-cache/

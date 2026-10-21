@@ -1,3 +1,4 @@
+import { CoverPhoto } from '../../../components/CoverPhoto';
 import { memo } from 'react';
 import { Text, View } from 'react-native';
 
@@ -11,6 +12,8 @@ type Props = {
   onOpen: (id: string) => void;
   onDelete: (event: CampusEvent) => void;
   deleting?: boolean;
+  isFavorite?: boolean;
+  onToggleFavorite?: (id: string) => void;
 };
 
 export const EventCard = memo(function EventCard({
@@ -18,12 +21,15 @@ export const EventCard = memo(function EventCard({
   onOpen,
   onDelete,
   deleting = false,
+  isFavorite = false,
+  onToggleFavorite,
 }: Props) {
   const place = pointsOfInterest.find((poi) => poi.id === event.poiId)?.name;
   const canDelete = isUserCreatedEventId(event.id);
 
   return (
     <View style={styles.card}>
+      <CoverPhoto poiId={event.poiId} title={place ?? event.title} />
       {canDelete && (
         <Text accessibilityLabel="กิจกรรมของคุณ ลบได้" style={styles.badgeText}>
           ★ กิจกรรมของคุณ • ลบได้
@@ -39,6 +45,11 @@ export const EventCard = memo(function EventCard({
         accessibilityHint="เปิดหน้ารายละเอียดของกิจกรรมนี้"
         onPress={() => onOpen(event.id)}
       />
+      {onToggleFavorite && <Action
+        variant="secondary"
+        title={isFavorite ? 'นำกิจกรรมออกจากรายการโปรด' : 'เพิ่มกิจกรรมในรายการโปรด'}
+        onPress={() => onToggleFavorite(event.id)}
+      />}
       {canDelete && (
         <Action
           title={deleting ? 'กำลังลบ…' : 'ลบกิจกรรมนี้'}

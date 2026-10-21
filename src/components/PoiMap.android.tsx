@@ -7,7 +7,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { WebView } from 'react-native-webview';
 import MapView, {
   Callout,
@@ -60,7 +60,7 @@ export function PoiMap({ poi }: PoiMapProps) {
 
     const timer = setTimeout(() => markerRef.current?.showCallout(), 650);
     return () => clearTimeout(timer);
-  }, [poi.id, poi.latitude, poi.longitude]);
+  }, [poi]);
 
   const centerFullMap = () => {
     if (Platform.OS === 'android') fullWebMapRef.current?.injectJavaScript('window.centerOnPoi && window.centerOnPoi(); true;');
@@ -125,7 +125,7 @@ export function PoiMap({ poi }: PoiMapProps) {
         presentationStyle="fullScreen"
         visible={isFullMapVisible}
       >
-        <View style={styles.fullscreen}>
+        <SafeAreaProvider style={styles.fullscreen}>
           {Platform.OS === 'android' ? <WebView
             key={poi.id}
             ref={fullWebMapRef}
@@ -196,7 +196,7 @@ export function PoiMap({ poi }: PoiMapProps) {
               </View>
             </View>
           </SafeAreaView>
-        </View>
+        </SafeAreaProvider>
       </Modal>
     </>
   );

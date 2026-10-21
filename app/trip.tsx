@@ -1,3 +1,6 @@
+import { DinoEmpty } from '../src/components/DinoIdentity';
+import { Action } from '../src/components/EventUI';
+import { requireAccount } from '../src/features/auth/requireAccount';
 import { useCallback, useState } from 'react';
 import { useFocusEffect, router } from 'expo-router';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
@@ -29,8 +32,9 @@ export default function MyTripScreen() {
             <Text style={styles.eyebrow}>MY TRIP</Text>
             <Text style={styles.title}>สถานที่ที่อยากไป</Text>
             <Text style={styles.subtitle}>
-              ประยุกต์แนวคิดจาก Assignment “Team Builder” เป็นการเลือกสถานที่เข้าทริปของเรา
+              เลือกสถานที่ที่อยากไป แล้วสร้างบันทึกทริปพร้อมวันเดินทาง เรื่องราว และรูปภาพ
             </Text>
+            <Action title="บันทึกการเดินทางของฉัน" onPress={() => { if (requireAccount()) router.push('/journeys'); }} />
             <View style={styles.countBadge}>
               <Text style={styles.count}>{selected.length}</Text>
               <Text style={styles.countLabel}>SELECTED</Text>
@@ -39,8 +43,7 @@ export default function MyTripScreen() {
         }
         ListEmptyComponent={
           <View style={styles.empty}>
-            <Text style={styles.emptyTitle}>ยังไม่มีสถานที่ในทริป</Text>
-            <Text style={styles.emptyText}>กลับหน้าแรกแล้วกด “เพิ่มเข้าทริป” ที่สถานที่ที่สนใจ</Text>
+            <DinoEmpty title="Dino พร้อมแล้ว จุดหมายแรกคือที่ไหน?" description="กลับหน้าแรกแล้วกดเพิ่มเข้าทริปที่สถานที่ที่สนใจ" />
             <Pressable style={styles.primaryButton} onPress={() => router.replace('/')}>
               <Text style={styles.primaryButtonText}>กลับไปเลือกสถานที่</Text>
             </Pressable>

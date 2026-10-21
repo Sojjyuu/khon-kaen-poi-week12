@@ -1,4 +1,32 @@
-# Khon Kaen Dino Explorer — Week 12
+## อัปเดตสถานที่และระบบบัญชี
+
+ชุดนี้อยู่บน branch `course-gaps-integration` เพิ่มสถานที่เป็น 28 แห่ง และหน้าเข้าสู่ระบบ/สมัครสมาชิกผ่านแท็บโปรไฟล์
+
+[วิธีเปิด API และทดสอบ Login/สมัครสมาชิก](docs/accounts-setup.md) — เปิด API + Expo พร้อมกันด้วย `npm start` (Node.js 22.13+)
+
+# Khon Kaen Dino Explorer — Week 13
+
+## สถานที่และตัวกรอง
+
+มี 28 สถานที่ใน 10 หมวด พร้อมจำนวนบนตัวกรองและหัวรายการที่อัปเดตตามผลค้นหา เลือกสถานที่เพื่อเพิ่มทริปหรือสร้างกิจกรรมได้ ทุกรายการมีลิงก์รูปพรีวิว (ตลาด อ.จิระใช้ภาพบริเวณใกล้เคียงพร้อมคำบรรยาย) ดู [แหล่งข้อมูลสถานที่](docs/place-catalog.md)
+
+## งานต่อยอดเกณฑ์สัปดาห์ 1–10
+
+เพิ่ม Event Favorites, remote event API พร้อม offline cache, Login/Registration ผ่าน API จำลอง, SecureStore session และตำแหน่งปัจจุบัน ดู [สถานะสิ่งที่เติมและสิ่งที่ยังขาด](docs/course-gaps-progress.md) ก่อนส่งงาน เวอร์ชันนี้อยู่บนสาขาแยกจาก Week 13 เดิม
+
+Week 13 เพิ่ม automated tests และ quality gates บนงาน Week 12 เดิม โดยมี [รายงานผลและ bug report](docs/week13-test-report.md) และ [Maestro smoke flow](.maestro/smoke.yaml) สำหรับ Preview Build ของแอปนี้
+
+```bash
+npm ci
+npm run typecheck
+npm run lint
+npm test
+CI=1 npx expo-doctor@1.20.4
+```
+
+Preview Build ยังต้องสร้างจาก Expo account ที่ล็อกอินและติดตั้งทดสอบบนเครื่องจริง ดูขั้นตอนและสถานะที่รายงาน Week 13
+
+## งานพื้นฐานจาก Week 12
 
 Week 12 ต่อยอดจาก Week 11 โดยโฟกัส **Architecture, Performance และ Accessibility** โดยไม่เพิ่ม scope ฟีเจอร์ที่ไม่จำเป็น
 
@@ -52,7 +80,7 @@ Profiler รอบล่าสุดที่ผู้ทดสอบส่ง�
 npm ci
 npm test
 npm run typecheck
-npx expo start -c
+npm start -- --clear
 ```
 
 Android Expo Go ใช้ Leaflet/OpenStreetMap ผ่าน WebView และต้องเชื่อมต่ออินเทอร์เน็ต ส่วน iPhone ใช้แผนที่ native; ฟิลเตอร์กล้องใช้หลังถ่าย ก่อนบันทึกภาพลงเครื่อง
@@ -101,4 +129,8 @@ GitHub Actions workflow: **Week 12 Quality Check**
 
 https://github.com/Sojjyuu/khon-kaen-poi-week12
 
-ใช้ branch `main` และไม่อัปโหลด `node_modules`, `.expo`, `.env` หรือ secret/API key
+ชุดปรับปรุงนี้ใช้ branch `course-gaps-integration` และไม่อัปโหลด `node_modules`, `.expo`, `.env` หรือ secret/API key
+
+### บัญชี โปรไฟล์ และทริป (28 ก.ย. 2026)
+
+แก้ SecureStore login, เปิด API + Expo ด้วย `npm start`, ย้ายบัญชีเดิมเข้า SQLite และเพิ่มรูป/แนะนำตัวในโปรไฟล์ มีบันทึกการเดินทางผ่าน API พร้อมชื่อ วัน โน้ต รูป และสถานที่หลายแห่ง การแจ้งเตือนแยกตามบัญชีและยกเลิกเมื่อออกจากระบบ ดู [วิธีตั้งค่าและขอบเขต](docs/accounts-setup.md)

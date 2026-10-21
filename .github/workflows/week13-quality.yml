@@ -1,0 +1,27 @@
+name: Week 13 Quality Check
+
+on:
+  push:
+    branches: [week13-testing-debugging, course-gaps-integration]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test-and-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run lint
+      - run: npm test
+      - name: Export Android and iOS bundles
+        run: |
+          CI=1 npx expo export --platform android --output-dir dist-android
+          CI=1 npx expo export --platform ios --output-dir dist-ios
+      - run: CI=1 npx --yes expo-doctor@1.20.4

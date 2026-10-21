@@ -17,10 +17,14 @@ function compile(path, dependencies) {
 }
 
 function setup({ granted = true, expoGo = false } = {}) {
+  const scope = compile('src/storage/accountScope.ts', {});
+  scope.setAccountScope('alice');
   const calls = [];
   const pending = new Map();
   const event = { id: 'demo', startsAt: new Date(Date.now() + 3_600_000).toISOString() };
   const notifications = {
+    getPresentedNotificationsAsync: async () => [],
+    dismissNotificationAsync: async () => {},
     setNotificationHandler: () => {},
     AndroidImportance: { HIGH: 4 },
     SchedulableTriggerInputTypes: { DATE: 'date' },
@@ -40,6 +44,7 @@ function setup({ granted = true, expoGo = false } = {}) {
     addNotificationReceivedListener: () => ({ remove() {} }),
   };
   const notificationModule = compile('src/services/notificationService.ts', {
+    '../storage/accountScope': scope,
     'react-native': {
       Platform: { OS: 'android' },
       Linking: { openSettings: async () => {} },
@@ -50,19 +55,20 @@ function setup({ granted = true, expoGo = false } = {}) {
   });
   const types = compile('src/features/events/types.ts', {});
   const repositoryModule = compile('src/repositories/reminderRepository.ts', {
+    '../storage/accountScope': scope,
     './eventRepository': { eventRepository: { findById: async (id) => id === event.id ? event : undefined } },
     '../features/events/types': types,
     '../services/notificationService': notificationModule,
   });
-  return { repository: repositoryModule.reminderRepository, responseEventId: repositoryModule.responseEventId, event, pending, calls };
+  return { scope, notifications, repository: repositoryModule.reminderRepository, responseEventId: repositoryModule.responseEventId, event, pending, calls };
 }
 
-test('channel precedes permission; trigger is 30 minutes before event; payload only contains ID', async () => {
+test('channel precedes permission; trigger is 30 minutes before event; payload contains event and account IDs', async () => {
   const { repository, event, pending, calls } = setup();
   const id = await repository.schedule('demo');
   assert.deepEqual(calls, ['channel', 'permission']);
   assert.equal(pending.get(id).trigger.date.getTime(), Date.parse(event.startsAt) - 1_800_000);
-  assert.equal(JSON.stringify(pending.get(id).content.data), '{"eventId":"demo"}');
+  assert.equal(JSON.stringify(pending.get(id).content.data), '{"eventId":"demo","ownerId":"alice"}');
 });
 
 test('Expo Go skips unavailable Android notification channel', async () => {
@@ -103,6 +109,25 @@ test('missing event cannot schedule and malformed response cannot navigate', asy
     assert.equal(responseEventId(response(data)), null);
   }
   assert.equal(responseEventId(response({ eventId: 'demo' }, 'dismiss')), null);
-  assert.equal(responseEventId(response({ eventId: 'demo' })), 'demo');
-  assert.equal(responseEventId(response({ eventId: 'deleted' })), 'deleted');
+  assert.equal(responseEventId(response({ eventId: 'demo', ownerId: 'alice' })), 'demo');
+  assert.equal(responseEventId(response({ eventId: 'deleted', ownerId: 'alice' })), 'deleted');
+});
+
+
+test('logout cancels only reminders and rejects work queued by the old account', async () => {
+  const { repository, pending, scope, responseEventId } = setup();
+  await repository.schedule('demo');
+  pending.set('other-feature', { identifier: 'other-feature', content: { data: {} } });
+  const queued = repository.schedule('demo', true);
+  const rejected = assert.rejects(queued, /บัญชีเปลี่ยน/);
+  await scope.prepareAccountChange(null);
+  scope.setAccountScope(null);
+  await rejected;
+  assert.deepEqual([...pending.keys()], ['other-feature']);
+  await scope.prepareAccountChange('bob');
+  scope.setAccountScope('bob');
+  assert.equal(responseEventId({ actionIdentifier: 'default', notification: { date: 1,
+    request: { identifier: 'event-reminder:alice:demo:main', content: { data: { eventId: 'demo', ownerId: 'alice' } } } } }), null);
+  await repository.schedule('demo');
+  assert.equal([...pending.values()].find(x => x.identifier !== 'other-feature').content.data.ownerId, 'bob');
 });

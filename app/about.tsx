@@ -13,7 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { colors } from '../src/theme/colors';
 
-const profileImage = require('../assets/profile-week12.jpg');
+const profileImage = require('../assets/profile-restored.jpg');
 
 const PROFILE = {
   name: 'Kirati Suwanpusit',
@@ -69,12 +69,12 @@ export default function ProfileScreen() {
     <>
       <Stack.Screen
         options={{
-          title: 'Profile',
+          title: 'เกี่ยวกับผู้พัฒนา',
           headerBackTitle: 'กลับ',
         }}
       />
 
-      <SafeAreaView style={styles.safe} edges={['bottom']}>
+      <SafeAreaView style={styles.safe} edges={['left', 'right']}>
         <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
           <ImageBackground source={profileImage} imageStyle={styles.coverImage} style={styles.cover}>
             <View style={styles.coverShade} />
@@ -126,7 +126,7 @@ export default function ProfileScreen() {
           <View style={styles.contactCard}>
             <View style={styles.contactHeaderRow}>
               <View>
-                <Text style={styles.contactEyebrow}>LET'S CONNECT</Text>
+                <Text style={styles.contactEyebrow}>LET&apos;S CONNECT</Text>
                 <Text style={styles.contactTitle}>ช่องทางติดต่อ</Text>
               </View>
               <View style={styles.onlinePill}>
